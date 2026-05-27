@@ -23,7 +23,7 @@ public class WorkOrderController {
 
     @GetMapping
     public R<Page<WorkOrder>> list(
-            @RequestParam Long userId,
+            @RequestParam(name="userId") Long userId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String serviceType) {
@@ -32,19 +32,19 @@ public class WorkOrderController {
 
     @GetMapping("/profit-by-location")
     public R<List<Map<String, Object>>> profitByLocation(
-            @RequestParam Long userId,
-            @RequestParam String start,
-            @RequestParam String end) {
+            @RequestParam(name="userId") Long userId,
+            @RequestParam(name="start") String start,
+            @RequestParam(name="end") String end) {
         return R.ok(workOrderService.profitByLocation(userId, start, end));
     }
 
     @GetMapping("/stats-by-type")
-    public R<List<Map<String, Object>>> statsByType(@RequestParam Long userId) {
+    public R<List<Map<String, Object>>> statsByType(@RequestParam(name="userId") Long userId) {
         return R.ok(workOrderService.statsByServiceType(userId));
     }
 
     @PutMapping("/{orderId}/status")
-    public R<WorkOrder> updateStatus(@PathVariable String orderId, @RequestParam String status) {
+    public R<WorkOrder> updateStatus(@PathVariable("orderId") String orderId, @RequestParam(name="status") String status) {
         return R.ok(workOrderService.updateStatus(orderId, status));
     }
 }

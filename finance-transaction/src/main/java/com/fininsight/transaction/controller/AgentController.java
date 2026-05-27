@@ -19,22 +19,22 @@ public class AgentController {
 
     /** 对话查询（同步） */
     @PostMapping("/chat")
-    public R<Map<String, String>> chat(@RequestParam Long userId,
-                                        @RequestParam String message) {
+    public R<Map<String, String>> chat(@RequestParam(name="userId") Long userId,
+                                        @RequestParam(name="message") String message) {
         String reply = agentChatService.chat(userId, message);
         return R.ok(Map.of("reply", reply, "role", "assistant"));
     }
 
     /** 对话查询（流式 SSE） */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@RequestParam Long userId,
-                                    @RequestParam String message) {
+    public Flux<String> chatStream(@RequestParam(name="userId") Long userId,
+                                    @RequestParam(name="message") String message) {
         return agentChatService.chatStream(userId, message);
     }
 
     /** 对工单进行 AI 分析 */
     @PostMapping("/analyze/{orderId}")
-    public R<String> analyze(@PathVariable String orderId) {
+    public R<String> analyze(@PathVariable("orderId") String orderId) {
         workOrderAiService.analyzeOrder(orderId);
         return R.ok("分析完成");
     }
