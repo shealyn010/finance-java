@@ -11,10 +11,16 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfig {
 
     public static final String AI_ANALYZE_QUEUE = "ai.analyze";
+    public static final String ORDER_CREATE_QUEUE = "order.create";
 
     @Bean
     public Queue aiAnalyzeQueue() {
-        return new Queue(AI_ANALYZE_QUEUE, true); // durable
+        return new Queue(AI_ANALYZE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue orderCreateQueue() {
+        return new Queue(ORDER_CREATE_QUEUE, true);
     }
 
     @Bean

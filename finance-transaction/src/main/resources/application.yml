@@ -35,3 +35,7 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+    hikari:
+      maximum-pool-size: 200
+      minimum-idle: 10
+      connection-timeout: 30000
