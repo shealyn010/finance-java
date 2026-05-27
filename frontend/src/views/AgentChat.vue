@@ -28,11 +28,11 @@ async function send(msg) {
   await scrollDown()
 
   try {
-    const { data } = await api.post('/agent/chat', null, {
+    const { data } = await api.post('/agent/sql-query', null, {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    const dataContext = data.data.dataContext || ''
+    const dataContext = '[SQL] ' + (data.data.sql || '') + '\n\n[数据]\n' + (data.data.dataContext || '')
     // 直接用AI回答时基于的原始数据作为校验
     const verified = dataContext
 
