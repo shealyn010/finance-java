@@ -55,6 +55,9 @@ public class WorkOrderController {
 
     @GetMapping("/monthly-stats")
     public R<List<Map<String, Object>>> monthlyStats(@RequestParam(name="userId") Long userId) {
+        // 优先走物化视图(毫秒级)，数据为空则回退到实时聚合
+        var fast = workOrderMapper.monthlyStatsFast(userId);
+        if (!fast.isEmpty()) return R.ok(fast);
         return R.ok(workOrderMapper.monthlyStats(userId));
     }
 }

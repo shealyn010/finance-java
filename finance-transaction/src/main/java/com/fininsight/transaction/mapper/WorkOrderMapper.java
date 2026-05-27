@@ -59,6 +59,12 @@ public interface WorkOrderMapper extends BaseMapper<WorkOrder> {
             "GROUP BY year, service_type ORDER BY year DESC, material_ratio DESC")
     List<Map<String, Object>> materialRatioByYearType(Long userId);
 
+    /** 从物化视图查月度统计(毫秒级) */
+    @Select("SELECT period_value as month, total_orders as orders, total_revenue as revenue, " +
+            "total_profit as profit, avg_profit_rate as avg_rate " +
+            "FROM work_order_report WHERE user_id=#{userId} AND period='month' ORDER BY period_value DESC")
+    List<Map<String, Object>> monthlyStatsFast(Long userId);
+
     /** 总体概览 */
     @Select("SELECT COUNT(*) as total, SUM(total_revenue) as revenue, " +
             "SUM(profit) as profit, AVG(profit_rate) as avg_rate, " +

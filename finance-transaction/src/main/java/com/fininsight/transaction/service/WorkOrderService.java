@@ -99,12 +99,31 @@ public class WorkOrderService {
         }
     }
 
+    private final Map<String, Long> countCache = new java.util.concurrent.ConcurrentHashMap<>();
+    private volatile long countCacheTime = 0;
+
     public Page<WorkOrder> listByUser(Long userId, int page, int size, String serviceType) {
         LambdaQueryWrapper<WorkOrder> qw = new LambdaQueryWrapper<WorkOrder>()
                 .eq(WorkOrder::getUserId, userId)
                 .eq(serviceType != null && !serviceType.isEmpty(), WorkOrder::getServiceType, serviceType)
                 .orderByDesc(WorkOrder::getOrderTime);
-        return workOrderMapper.selectPage(new Page<>(page, size), qw);
+
+        // COUNT缓存(60秒)，避免每页都扫百万行
+        String cacheKey = userId + "_" + (serviceType != null ? serviceType : "ALL");
+        if (System.currentTimeMillis() - countCacheTime > 60000) {
+            countCache.clear();
+            countCacheTime = System.currentTimeMillis();
+        }
+        long total = countCache.computeIfAbsent(cacheKey, k -> {
+            Long c = workOrderMapper.selectCount(qw);
+            return c != null ? c : 0L;
+        });
+
+        Page<WorkOrder> pg = new Page<>(page, size);
+        pg.setTotal(total);
+        pg.setRecords(workOrderMapper.selectList(qw
+            .last("LIMIT " + size + " OFFSET " + ((page - 1) * size))));
+        return pg;
     }
 
     public List<Map<String, Object>> profitByLocation(Long userId, String start, String end) {
