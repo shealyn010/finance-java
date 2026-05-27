@@ -2,7 +2,18 @@
 import { ref, nextTick, watch, onMounted } from 'vue'
 import { auth } from '../stores/auth.js'
 import api from '../api/index.js'
-import VerificationTable from '../components/VerificationTable.vue'
+
+function formatVerified(raw) {
+  if (!raw) return '(无数据)'
+  try {
+    const m = raw.match(/\[[\s\S]*\]/)
+    if (!m) return raw
+    const arr = JSON.parse(m[0])
+    if (!Array.isArray(arr) || !arr.length) return raw
+    // 转成纯文本行，不暴露字段名
+    return arr.map(r => Object.values(r).join('  |  ')).join('\n')
+  } catch { return raw }
+}
 
 const STORAGE_KEY = 'fininsight_chat_' + auth.user?.id
 
@@ -116,7 +127,7 @@ onMounted(() => {
         </div>
         <div v-else>
           <p style="font-weight:600;margin-bottom:8px;font-size:12px;color:#999">📊 查询结果</p>
-          <VerificationTable :data="messages[selectedVerify]?.verified" />
+          <pre style="font-size:12px;color:#555;white-space:pre-wrap;line-height:1.7;background:#fafbfc;padding:14px;border-radius:8px;max-height:60vh;overflow-y:auto">{{ formatVerified(messages[selectedVerify]?.verified) }}</pre>
         </div>
       </div>
     </div>
