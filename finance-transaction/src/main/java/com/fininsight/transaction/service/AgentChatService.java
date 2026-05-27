@@ -167,45 +167,45 @@ public class AgentChatService {
         return sb.toString();
     }
 
-    /** 精准查询上下文：从问题中提取实体，定向查库 */
-    @SuppressWarnings("unchecked")
+    private static final java.util.regex.Pattern YEAR_PAT = java.util.regex.Pattern.compile("(\\d{4})\\s*年");
+    private static final java.util.regex.Pattern MONTH_PAT = java.util.regex.Pattern.compile("(\\d{1,2})\\s*月");
+    private static final java.util.regex.Pattern TYPE_PAT = java.util.regex.Pattern.compile("(维修|安装|巡检|保养|定制)");
+    private static final java.util.regex.Pattern LOC_PAT = java.util.regex.Pattern.compile("(古镇|小榄|石岐|东区|西区|南头|火炬|三乡|板芙|港口|开发区)");
+
+    /** 精准查询：正则提取实体 + 定向SQL */
     private String buildTargetedContext(Long userId, String question) {
         try {
-            // 1. 用LLM提取语义实体
-            String extractPrompt = """
-                从用户问题中提取以下实体，返回JSON(不要其他文字):
-                {"year":"2025","month":"03","serviceType":"维修","location":"古镇","metric":"利润"}
-                未提及的字段填null。""";
-
-            Map<String, Object> extractResp = webClient.post()
-                .uri("/v1/chat/completions")
-                .bodyValue(Map.of(
-                    "model", "deepseek-chat",
-                    "messages", List.of(
-                        Map.of("role", "user", "content", extractPrompt + "\n问题:" + question)
-                    ),
-                    "max_tokens", 150, "temperature", 0.1
-                ))
-                .retrieve().bodyToMono(Map.class).block();
-
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) extractResp.get("choices");
-            String json = (String) choices.get(0).get("message");
-            // 清理markdown
-            json = json.replaceAll("```json\\s*", "").replaceAll("```", "").trim();
-            var entity = objectMapper.readTree(json);
-            String year = entity.has("year") && !entity.get("year").isNull() ? entity.get("year").asText() : null;
-            String month = entity.has("month") && !entity.get("month").isNull() ? entity.get("month").asText() : null;
-            String svcType = entity.has("serviceType") && !entity.get("serviceType").isNull() ? entity.get("serviceType").asText() : null;
-            String loc = entity.has("location") && !entity.get("location").isNull() ? entity.get("location").asText() : null;
+            // 正则提取（毫秒级，不走LLM）
+            var ym = YEAR_PAT.matcher(question);
+            var mm = MONTH_PAT.matcher(question);
+            var tm = TYPE_PAT.matcher(question);
+            var lm = LOC_PAT.matcher(question);
+            String year = ym.find() ? ym.group(1) : null;
+            String month = mm.find() ? String.format("%02d", Integer.parseInt(mm.group(1))) : null;
+            String svcType = tm.find() ? tm.group(1) : null;
+            String loc = lm.find() ? lm.group(1) : null;
 
             StringBuilder sb = new StringBuilder();
 
-            // 2. 根据实体精准查询
-            var ov = workOrderMapper.overview(userId);
-            sb.append(String.format("总览: %s单, 利润¥%s, 利润率%s%%\n\n",
-                ov.get("total"), ov.get("profit"), ov.get("avg_rate")));
+            // 年度×类型精准匹配
+            if (year != null || svcType != null) {
+                var yt = workOrderMapper.yearlyByType(userId);
+                sb.append("## 年度×类型匹配\n| 年份 | 类型 | 单数 | 利润 | 利润率 |\n|------|------|------|------|--------|\n");
+                int matched = 0;
+                for (var r : yt) {
+                    String ry = (String) r.get("year");
+                    String rt = (String) r.get("service_type");
+                    if (year != null && !ry.equals(year)) continue;
+                    if (svcType != null && !rt.contains(svcType)) continue;
+                    sb.append(String.format("| %s | %s | %s | ¥%s | %s%% |\n",
+                        ry, rt, r.get("orders"), r.get("profit"), r.get("avg_rate")));
+                    matched++;
+                }
+                if (matched == 0) sb.append("(无匹配)\n");
+                sb.append("\n");
+            }
 
-            // 按条件查月度数据
+            // 月度明细（仅当年份指定时）
             if (year != null) {
                 var monthly = workOrderMapper.monthlyStats(userId);
                 sb.append(year + "年月度明细:\n");
