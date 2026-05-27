@@ -36,10 +36,10 @@ async function createOrder() {
   }
   try {
     await axios.post(`${API}/work-order`, f)
+    await fetchOrders()
     showCreate.value = false
     error.value = ''
     form.value = emptyForm()
-    fetchOrders()
   } catch(e) {
     error.value = e.response?.data?.message || '创建失败'
   }
@@ -107,7 +107,7 @@ onMounted(fetchOrders)
     </div>
 
     <!-- Create Modal -->
-    <div v-if="showCreate" class="modal-overlay" @click.self="showCreate=false">
+    <div v-if="showCreate" class="modal-overlay">
       <div class="modal">
         <h3>新建工单</h3>
         <div class="form-grid">

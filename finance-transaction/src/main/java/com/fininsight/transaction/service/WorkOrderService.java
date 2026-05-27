@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fininsight.common.exception.BizException;
 import com.fininsight.transaction.entity.WorkOrder;
 import com.fininsight.transaction.mapper.WorkOrderMapper;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,11 +14,18 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-@RequiredArgsConstructor
 public class WorkOrderService {
     private final WorkOrderMapper workOrderMapper;
+    private final WorkOrderAiService aiService;
+
+    public WorkOrderService(WorkOrderMapper workOrderMapper,
+                            @Lazy WorkOrderAiService aiService) {
+        this.workOrderMapper = workOrderMapper;
+        this.aiService = aiService;
+    }
 
     public WorkOrder create(WorkOrder order) {
         // 参数校验
@@ -62,6 +69,13 @@ public class WorkOrderService {
         order.setAiAnalyzed(0);
         order.setCreatedAt(LocalDateTime.now());
         workOrderMapper.insert(order);
+
+        // 异步触发 AI 分析（不阻塞创建接口返回）
+        String id = order.getOrderId();
+        CompletableFuture.runAsync(() -> {
+            try { aiService.analyzeOrder(id); } catch (Exception ignored) {}
+        });
+
         return order;
     }
 
