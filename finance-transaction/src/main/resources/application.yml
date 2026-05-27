@@ -5,12 +5,11 @@ spring:
   application:
     name: finance-transaction
   datasource:
-    url: jdbc:mysql://127.0.0.1:3307/fininsight?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/fininsight?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-# DeepSeek API
 fininsight:
   ai:
     base-url: https://api.deepseek.com
@@ -20,4 +19,3 @@ fininsight:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
