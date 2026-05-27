@@ -22,7 +22,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public R<Map<String, Object>> login(@RequestBody Map<String, String> body) {
-        String token = userService.login(body.get("username"), body.get("password"));
-        return R.ok(Map.of("token", token, "message", "登录成功"));
+        Map<String, Object> result = userService.login(body.get("username"), body.get("password"));
+        result.put("message", "登录成功");
+        return R.ok(result);
     }
 }

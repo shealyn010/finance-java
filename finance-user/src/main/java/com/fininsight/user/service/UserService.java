@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -31,14 +33,18 @@ public class UserService {
         return user;
     }
 
-    public String login(String username, String password) {
+    public Map<String, Object> login(String username, String password) {
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, username));
         if (user == null || !encoder.matches(password, user.getPassword())) {
             throw new BizException(401, "用户名或密码错误");
         }
-        // 简化版：直接返回UUID token，生产应改用JWT+Redis
-        return UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
+        Map<String, Object> result = new HashMap<>();
+        result.put("token", token);
+        result.put("userId", user.getId());
+        result.put("username", user.getUsername());
+        return result;
     }
 
     public User getById(Long id) {
