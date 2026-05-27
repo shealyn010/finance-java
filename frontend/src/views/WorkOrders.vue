@@ -7,11 +7,13 @@ const orders = ref([])
 const loading = ref(false)
 const filter = ref('')
 const showCreate = ref(false)
-const form = ref({
+const error = ref('')
+const emptyForm = () => ({
   userId: 1, customer: '', serviceType: '维修', serviceDesc: '',
   laborHours: 0, laborCost: 0, materialCost: 0, otherCost: 0,
   totalRevenue: 0, location: '', technician: '', orderTime: new Date().toISOString().slice(0,16)
 })
+const form = ref(emptyForm())
 
 async function fetchOrders() {
   loading.value = true
@@ -25,9 +27,22 @@ async function fetchOrders() {
 }
 
 async function createOrder() {
-  await axios.post(`${API}/work-order`, form.value)
-  showCreate.value = false
-  fetchOrders()
+  error.value = ''
+  const f = form.value
+  if (!f.customer.trim()) { error.value = '客户名称不能为空'; return }
+  if (!f.totalRevenue || f.totalRevenue < 0) { error.value = '工单收入必须为正数'; return }
+  if (f.laborCost < 0 || f.materialCost < 0 || f.otherCost < 0 || f.laborHours < 0) {
+    error.value = '费用和工时不能为负数'; return
+  }
+  try {
+    await axios.post(`${API}/work-order`, f)
+    showCreate.value = false
+    error.value = ''
+    form.value = emptyForm()
+    fetchOrders()
+  } catch(e) {
+    error.value = e.response?.data?.message || '创建失败'
+  }
 }
 
 const stats = computed(() => {
@@ -95,23 +110,40 @@ onMounted(fetchOrders)
     <div v-if="showCreate" class="modal-overlay" @click.self="showCreate=false">
       <div class="modal">
         <h3>新建工单</h3>
-        <div class="grid-2">
-          <input v-model="form.customer" placeholder="客户名称 *" />
+        <div class="form-grid">
+          <label>客户名称 <span class="req">*</span></label>
+          <label>服务类型</label>
+          <input v-model="form.customer" placeholder="例如: 古镇灯饰厂" />
           <select v-model="form.serviceType">
             <option>安装</option><option>维修</option><option>巡检</option><option>保养</option><option>定制</option>
           </select>
-          <input v-model="form.location" placeholder="服务地点 (如: 中山市古镇)" />
-          <input v-model="form.technician" placeholder="技术员" />
-          <input v-model.number="form.totalRevenue" type="number" placeholder="工单收入 *" />
-          <input v-model.number="form.laborCost" type="number" placeholder="人工费" />
-          <input v-model.number="form.materialCost" type="number" placeholder="材料费" />
-          <input v-model.number="form.otherCost" type="number" placeholder="其他费用" />
-          <input v-model.number="form.laborHours" type="number" placeholder="工时(h)" step="0.5" />
+
+          <label>服务地点</label>
+          <label>技术员</label>
+          <input v-model="form.location" placeholder="例如: 中山市古镇" />
+          <input v-model="form.technician" placeholder="例如: 张工" />
+
+          <label>工单收入 (¥) <span class="req">*</span></label>
+          <label>人工费 (¥)</label>
+          <input v-model.number="form.totalRevenue" type="number" min="0" placeholder="0.00" />
+          <input v-model.number="form.laborCost" type="number" min="0" placeholder="0.00" />
+
+          <label>材料费 (¥)</label>
+          <label>其他费用 (¥)</label>
+          <input v-model.number="form.materialCost" type="number" min="0" placeholder="0.00" />
+          <input v-model.number="form.otherCost" type="number" min="0" placeholder="0.00" />
+
+          <label>工时 (小时)</label>
+          <label>工单日期</label>
+          <input v-model.number="form.laborHours" type="number" min="0" step="0.5" placeholder="0.0" />
           <input v-model="form.orderTime" type="datetime-local" />
-          <textarea v-model="form.serviceDesc" placeholder="服务描述" style="grid-column:1/3; height:60px" />
+
+          <label style="grid-column:1/3">服务描述</label>
+          <textarea v-model="form.serviceDesc" placeholder="简要描述服务内容..." style="grid-column:1/3; height:60px" />
         </div>
+        <p v-if="error" class="err">{{ error }}</p>
         <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px">
-          <button class="btn btn-outline" @click="showCreate=false">取消</button>
+          <button class="btn btn-outline" @click="showCreate=false; error=''">取消</button>
           <button class="btn btn-primary" @click="createOrder">创建</button>
         </div>
       </div>
@@ -121,5 +153,9 @@ onMounted(fetchOrders)
 
 <style scoped>
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: #fff; border-radius: 16px; padding: 30px; width: 600px; max-height: 80vh; overflow-y: auto; }
+.modal { background: #fff; border-radius: 16px; padding: 30px; width: 640px; max-height: 85vh; overflow-y: auto; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+.form-grid label { font-size: 13px; color: #666; font-weight: 500; padding-top: 8px; }
+.form-grid .req { color: #e74c3c; }
+.err { color: #e74c3c; font-size: 13px; margin-top: 8px; }
 </style>

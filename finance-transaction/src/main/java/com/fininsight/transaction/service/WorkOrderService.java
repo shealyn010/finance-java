@@ -21,6 +21,23 @@ public class WorkOrderService {
     private final WorkOrderMapper workOrderMapper;
 
     public WorkOrder create(WorkOrder order) {
+        // 参数校验
+        if (order.getCustomer() == null || order.getCustomer().isBlank()) {
+            throw new BizException(400, "客户名称不能为空");
+        }
+        if (order.getTotalRevenue() == null || order.getTotalRevenue().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BizException(400, "工单收入必须为非负数");
+        }
+        if (order.getLaborCost() != null && order.getLaborCost().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BizException(400, "人工费不能为负数");
+        }
+        if (order.getMaterialCost() != null && order.getMaterialCost().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BizException(400, "材料费不能为负数");
+        }
+        if (order.getOtherCost() != null && order.getOtherCost().compareTo(BigDecimal.ZERO) < 0) {
+            throw new BizException(400, "其他费用不能为负数");
+        }
+
         order.setOrderId(IdUtil.fastSimpleUUID());
         // 自动计算
         BigDecimal totalCost = BigDecimal.ZERO
