@@ -27,8 +27,22 @@ public interface WorkOrderMapper extends BaseMapper<WorkOrder> {
             "AVG(profit_rate) as avg_rate, " +
             "SUM(CASE WHEN profit < 0 THEN 1 ELSE 0 END) as loss_orders " +
             "FROM work_order WHERE user_id = #{userId} " +
-            "GROUP BY month ORDER BY month DESC LIMIT 24")
+            "GROUP BY month ORDER BY month DESC")
     List<Map<String, Object>> monthlyStats(Long userId);
+
+    /** 按年+类型统计 */
+    @Select("SELECT DATE_FORMAT(order_time,'%Y') as year, service_type, COUNT(*) as orders, " +
+            "SUM(total_revenue) as revenue, SUM(profit) as profit, AVG(profit_rate) as avg_rate " +
+            "FROM work_order WHERE user_id = #{userId} " +
+            "GROUP BY year, service_type ORDER BY year DESC, profit DESC")
+    List<Map<String, Object>> yearlyByType(Long userId);
+
+    /** 按年统计 */
+    @Select("SELECT DATE_FORMAT(order_time,'%Y') as year, COUNT(*) as orders, " +
+            "SUM(total_revenue) as revenue, SUM(profit) as profit, AVG(profit_rate) as avg_rate " +
+            "FROM work_order WHERE user_id = #{userId} " +
+            "GROUP BY year ORDER BY year DESC")
+    List<Map<String, Object>> yearlyStats(Long userId);
 
     /** 总体概览 */
     @Select("SELECT COUNT(*) as total, SUM(total_revenue) as revenue, " +
