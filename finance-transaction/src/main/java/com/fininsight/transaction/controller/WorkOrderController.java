@@ -7,6 +7,9 @@ import com.fininsight.transaction.mapper.WorkOrderMapper;
 import com.fininsight.transaction.service.WorkOrderService;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +46,7 @@ public class WorkOrderController {
         return R.ok(workOrderService.profitByLocation(userId, start, end));
     }
 
+    @Cacheable(value = "report", key = "'typeStats_' + #userId", unless = "#result.data.isEmpty()")
     @GetMapping("/stats-by-type")
     public R<List<Map<String, Object>>> statsByType(@RequestParam(name="userId") Long userId) {
         return R.ok(workOrderService.statsByServiceType(userId));
@@ -53,6 +57,7 @@ public class WorkOrderController {
         return R.ok(workOrderService.updateStatus(orderId, status));
     }
 
+    @Cacheable(value = "report", key = "'monthly_' + #userId", unless = "#result.data.isEmpty()")
     @GetMapping("/monthly-stats")
     public R<List<Map<String, Object>>> monthlyStats(@RequestParam(name="userId") Long userId) {
         // 优先走物化视图(毫秒级)，数据为空则回退到实时聚合
