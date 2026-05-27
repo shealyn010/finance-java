@@ -44,11 +44,11 @@ async function send(msg) {
     loading.value = false; return
   }
   try {
-    const { data } = await api.post('/agent/sql-query', null, {
+    const { data } = await api.post('/agent/query', null, {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    const verified = data.data.dataContext || ''
+    const verified = (data.data.engine === 'rag' ? '📚 RAG知识库检索' : '🔍 SQL数据查询') + '\n' + (data.data.dataContext || '')
 
     messages.value.push({ role: 'ai', content: reply, verified })
   } catch(e) {
