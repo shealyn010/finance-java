@@ -5,7 +5,7 @@ spring:
   application:
     name: finance-transaction
   datasource:
-    url: jdbc:mysql://localhost:3306/fininsight?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/fininsight?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,6 +16,20 @@ fininsight:
     api-key: ${DEEPSEEK_API_KEY:}
     model: deepseek-chat
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      simple:
+        prefetch: 1
+        concurrency: 3
+        max-concurrency: 5
+
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
