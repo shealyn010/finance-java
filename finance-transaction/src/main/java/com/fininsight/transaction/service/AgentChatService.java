@@ -104,20 +104,39 @@ public class AgentChatService {
                 .filter(s -> !s.isEmpty());
     }
 
-    /** 构建用户数据上下文 */
+    /** 构建用户数据上下文——多维度喂给LLM */
     private String buildDataContext(Long userId) {
         try {
-            var stats = workOrderMapper.statsByServiceType(userId);
-            if (stats.isEmpty()) return "暂无工单数据。";
+            StringBuilder sb = new StringBuilder();
+            Map<String, Object> ov = workOrderMapper.overview(userId);
 
-            StringBuilder sb = new StringBuilder("当前用户工单数据概览：\n");
-            for (var row : stats) {
-                sb.append(String.format("- %s: %s单, 收入¥%s, 利润¥%s\n",
-                        row.get("service_type"),
-                        row.get("orders"),
-                        row.get("revenue"),
-                        row.get("profit")));
+            sb.append(String.format("## 用户工单总览\n总工单: %s单 | 总收入: ¥%s | 总利润: ¥%s | 平均利润率: %s%% | 亏损单: %s单 | 高利润单: %s单\n\n",
+                ov.get("total"), ov.get("revenue"), ov.get("profit"),
+                ov.get("avg_rate"), ov.get("loss_count"), ov.get("high_profit_count")));
+
+            // 按月统计（最近12个月）
+            var monthly = workOrderMapper.monthlyStats(userId);
+            if (!monthly.isEmpty()) {
+                sb.append("## 最近12个月利润明细\n| 月份 | 工单数 | 收入 | 利润 | 利润率 | 亏损单 |\n|------|--------|------|------|--------|--------|\n");
+                int count = 0;
+                for (var m : monthly) {
+                    if (count++ >= 12) break;
+                    sb.append(String.format("| %s | %s | ¥%s | ¥%s | %s%% | %s |\n",
+                        m.get("month"), m.get("orders"), m.get("revenue"),
+                        m.get("profit"), m.get("avg_rate"), m.get("loss_orders")));
+                }
             }
+
+            // 按类型统计
+            var byType = workOrderMapper.statsByServiceType(userId);
+            if (!byType.isEmpty()) {
+                sb.append("\n## 按服务类型统计\n| 类型 | 工单数 | 收入 | 利润 |\n|------|--------|------|------|\n");
+                for (var t : byType) {
+                    sb.append(String.format("| %s | %s | ¥%s | ¥%s |\n",
+                        t.get("service_type"), t.get("orders"), t.get("revenue"), t.get("profit")));
+                }
+            }
+
             return sb.toString();
         } catch (Exception e) {
             return "暂无工单数据。";
