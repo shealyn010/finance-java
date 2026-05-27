@@ -44,8 +44,11 @@ public class AgentChatService {
     @SuppressWarnings("unchecked")
     public Map<String, Object> chat(Long userId, String message) {
         try {
-            // 1. 意图分类
+            // 1. 意图分类（关键词强制定路由）
             String intent = classifyIntent(message);
+            if (message.contains("哪个月") || message.contains("亏损") || message.contains("月份")) {
+                intent = "specific_query";
+            }
 
             // 2. 根据意图走不同数据获取策略
             String dataContext = switch (intent) {
@@ -172,18 +175,30 @@ public class AgentChatService {
     private static final java.util.regex.Pattern TYPE_PAT = java.util.regex.Pattern.compile("(维修|安装|巡检|保养|定制)");
     private static final java.util.regex.Pattern LOC_PAT = java.util.regex.Pattern.compile("(古镇|小榄|石岐|东区|西区|南头|火炬|三乡|板芙|港口|开发区)");
 
+    private String resolveYear(String q) {
+        var m = YEAR_PAT.matcher(q);
+        if (m.find()) return m.group(1);
+        // 相对时间
+        int thisYear = java.time.LocalDate.now().getYear();
+        if (q.contains("去年") || q.contains("上一年")) return String.valueOf(thisYear - 1);
+        if (q.contains("今年") || q.contains("本年")) return String.valueOf(thisYear);
+        if (q.contains("前年")) return String.valueOf(thisYear - 2);
+        if (q.contains("明年")) return String.valueOf(thisYear + 1);
+        return null;
+    }
+
     /** 精准查询：正则提取实体 + 定向SQL */
     private String buildTargetedContext(Long userId, String question) {
         try {
-            // 正则提取（毫秒级，不走LLM）
-            var ym = YEAR_PAT.matcher(question);
             var mm = MONTH_PAT.matcher(question);
             var tm = TYPE_PAT.matcher(question);
             var lm = LOC_PAT.matcher(question);
-            String year = ym.find() ? ym.group(1) : null;
+            String year = resolveYear(question);
             String month = mm.find() ? String.format("%02d", Integer.parseInt(mm.group(1))) : null;
             String svcType = tm.find() ? tm.group(1) : null;
             String loc = lm.find() ? lm.group(1) : null;
+            // 亏损/利润类问题必须有月度数据
+            boolean needMonthly = question.contains("亏损") || question.contains("哪个月") || question.contains("月份");
 
             StringBuilder sb = new StringBuilder();
 
@@ -205,13 +220,16 @@ public class AgentChatService {
                 sb.append("\n");
             }
 
-            // 月度明细（仅当年份指定时）
-            if (year != null) {
+            // 月度明细（年份指定 或 亏损/月份类问题）
+            if (year != null || needMonthly) {
                 var monthly = workOrderMapper.monthlyStats(userId);
-                sb.append(year + "年月度明细:\n");
+                String label = year != null ? year + "年" : "";
+                sb.append(label + "月度明细:\n");
+                int mc = 0;
                 for (var m : monthly) {
                     String mth = (String) m.get("month");
-                    if (mth.startsWith(year)) {
+                    boolean show = year != null ? mth.startsWith(year) : (mc++ < 12);
+                    if (show) {
                         sb.append(String.format("%s: %s单, 利润¥%s, 亏损%s\n",
                             mth, m.get("orders"), m.get("profit"), m.get("loss_orders")));
                     }
