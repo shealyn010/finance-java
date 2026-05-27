@@ -13,8 +13,6 @@ public class User {
     private String password;
     private String phone;
     private String company;
-    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
-    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
 }

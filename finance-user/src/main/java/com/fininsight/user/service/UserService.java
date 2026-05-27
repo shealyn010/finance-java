@@ -25,6 +25,8 @@ public class UserService {
         User user = new User();
         user.setUsername(username);
         user.setPassword(encoder.encode(password));
+        user.setCreatedAt(java.time.LocalDateTime.now());
+        user.setUpdatedAt(java.time.LocalDateTime.now());
         userMapper.insert(user);
         return user;
     }

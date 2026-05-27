@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import axios from 'axios'
-const API = '/api'
+import { auth } from '../stores/auth.js'
+import api from '../api/index.js'
 
 const orders = ref([])
 const loading = ref(false)
@@ -9,7 +9,7 @@ const filter = ref('')
 const showCreate = ref(false)
 const error = ref('')
 const emptyForm = () => ({
-  userId: 1, customer: '', serviceType: '维修', serviceDesc: '',
+  userId: auth.user.id, customer: '', serviceType: '维修', serviceDesc: '',
   laborHours: 0, laborCost: 0, materialCost: 0, otherCost: 0,
   totalRevenue: 0, location: '', technician: '', orderTime: new Date().toISOString().slice(0,16)
 })
@@ -18,8 +18,8 @@ const form = ref(emptyForm())
 async function fetchOrders() {
   loading.value = true
   try {
-    const { data } = await axios.get(`${API}/work-order`, {
-      params: { userId: 1, page: 1, size: 50, serviceType: filter.value || undefined }
+    const { data } = await api.get('/work-order', {
+      params: { userId: auth.user.id, page: 1, size: 50, serviceType: filter.value || undefined }
     })
     orders.value = data.data?.records || []
   } catch(e) { console.error(e) }
@@ -35,7 +35,7 @@ async function createOrder() {
     error.value = '费用和工时不能为负数'; return
   }
   try {
-    await axios.post(`${API}/work-order`, f)
+    await api.post('/work-order', f)
     await fetchOrders()
     showCreate.value = false
     error.value = ''

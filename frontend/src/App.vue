@@ -1,8 +1,16 @@
 <script setup>
 import { ref } from 'vue'
+import { auth } from './stores/auth.js'
+import Login from './views/Login.vue'
 import WorkOrders from './views/WorkOrders.vue'
 import AgentChat from './views/AgentChat.vue'
 import Report from './views/Report.vue'
+
+const loggedIn = ref(auth.isLoggedIn())
+
+function onLogin() { loggedIn.value = true }
+
+function doLogout() { auth.logout(); loggedIn.value = false }
 
 const nav = [
   { key: 'orders', label: '工单管理', icon: '📋' },
@@ -13,7 +21,8 @@ const active = ref('orders')
 </script>
 
 <template>
-  <div class="app">
+  <Login v-if="!loggedIn" @loggedIn="onLogin" />
+  <div v-else class="app">
     <aside class="sidebar">
       <div class="logo">Fin<span>Insight</span></div>
       <nav>
@@ -24,7 +33,7 @@ const active = ref('orders')
           <span>{{ n.label }}</span>
         </a>
       </nav>
-      <div class="user">👤 白尚霖</div>
+      <div class="user" style="cursor:pointer" @click="doLogout">👤 {{ auth.user?.username }} | 退出</div>
     </aside>
     <main class="main">
       <WorkOrders v-if="active === 'orders'" />

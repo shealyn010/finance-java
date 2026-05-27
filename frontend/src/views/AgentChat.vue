@@ -1,7 +1,7 @@
 <script setup>
 import { ref, nextTick } from 'vue'
-import axios from 'axios'
-const API = '/api'
+import { auth } from '../stores/auth.js'
+import api from '../api/index.js'
 
 const messages = ref([
   { role: 'ai', content: '你好！我是小福 🤖，你的企业工单分析助手。\n\n你可以问我：\n• "这个月维修工单利润怎么样？"\n• "古镇那边的工单情况如何？"\n• "哪种服务利润率最高？"' }
@@ -20,8 +20,8 @@ async function send() {
   if (chatEl.value) chatEl.value.scrollTop = chatEl.value.scrollHeight
 
   try {
-    const { data } = await axios.post(`${API}/agent/chat`, null, {
-      params: { userId: 1, message: msg }
+    const { data } = await api.post('/agent/chat', null, {
+      params: { userId: auth.user.id, message: msg }
     })
     messages.value.push({ role: 'ai', content: data.data.reply })
   } catch(e) {

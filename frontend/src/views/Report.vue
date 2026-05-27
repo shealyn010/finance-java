@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
-const API = '/api'
+import { auth } from '../stores/auth.js'
+import api from '../api/index.js'
 
 const byType = ref([])
 const byLocation = ref([])
@@ -9,8 +9,8 @@ const byLocation = ref([])
 onMounted(async () => {
   try {
     const [t, l] = await Promise.all([
-      axios.get(`${API}/work-order/stats-by-type`, { params: { userId: 1 } }),
-      axios.get(`${API}/work-order/profit-by-location`, { params: { userId: 1, start: '2026-01-01', end: '2026-12-31' } })
+      api.get('/work-order/stats-by-type', { params: { userId: auth.user.id } }),
+      api.get('/work-order/profit-by-location', { params: { userId: auth.user.id, start: '2026-01-01', end: '2026-12-31' } })
     ])
     byType.value = t.data.data || []
     byLocation.value = l.data.data || []
