@@ -75,6 +75,17 @@ const pages = computed(() => {
   if (p<tp-2) r.push('...'); r.push(tp); return r
 })
 
+const statusLabels = {
+  pending:'待分派', assigned:'已分派', accepted:'已接单', arrived:'已到场',
+  in_progress:'维修中', parts_needed:'待配件', completed:'已完成',
+  confirmed:'已确认', settled:'已结算', closed:'已关单', processing:'处理中'
+}
+const statusColors = {
+  pending:'#ffa726', assigned:'#42a5f5', accepted:'#26c6da', arrived:'#ab47bc',
+  in_progress:'#ef5350', parts_needed:'#ff7043', completed:'#66bb6a',
+  confirmed:'#26a69a', settled:'#78909c', closed:'#bdbdbd', processing:'#ffa726'
+}
+
 onMounted(fetchOrders)
 </script>
 
@@ -102,11 +113,16 @@ onMounted(fetchOrders)
       </div>
 
       <table>
-        <thead><tr><th>客户</th><th>类型</th><th>地点</th><th>收入</th><th>利润</th><th>利润率</th><th>AI分类</th><th>日期</th></tr></thead>
+        <thead><tr><th>客户</th><th>类型</th><th>状态</th><th>地点</th><th>收入</th><th>利润</th><th>利润%</th><th>AI</th><th>日期</th></tr></thead>
         <tbody>
           <tr v-for="o in filteredOrders" :key="o.orderId">
             <td><b>{{ o.customer }}</b></td>
             <td>{{ o.serviceType }}</td>
+            <td>
+              <span :style="{background:statusColors[o.status]||'#999',color:'#fff',padding:'2px 8px',borderRadius:'10px',fontSize:'11px',fontWeight:500}">
+                {{ statusLabels[o.status] || o.status }}
+              </span>
+            </td>
             <td style="font-size:13px;color:#888">{{ o.location||'-' }}</td>
             <td>¥{{ (o.totalRevenue||0).toLocaleString() }}</td>
             <td :style="{color:(o.profit||0)>=0?'#2e7d32':'#c62828'}">¥{{ (o.profit||0).toLocaleString() }}</td>

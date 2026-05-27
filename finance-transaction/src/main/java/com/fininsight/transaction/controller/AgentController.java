@@ -2,6 +2,7 @@ package com.fininsight.transaction.controller;
 
 import com.fininsight.common.result.R;
 import com.fininsight.transaction.service.AgentChatService;
+import com.fininsight.transaction.service.ChunkingEngine;
 import com.fininsight.transaction.service.RagService;
 import com.fininsight.transaction.service.SqlAgentService;
 import com.fininsight.transaction.service.WorkOrderAiService;
@@ -20,15 +21,18 @@ public class AgentController {
     private final WorkOrderAiService workOrderAiService;
     private final SqlAgentService sqlAgentService;
     private final RagService ragService;
+    private final ChunkingEngine chunkingEngine;
 
     public AgentController(AgentChatService agentChatService,
                            WorkOrderAiService workOrderAiService,
                            SqlAgentService sqlAgentService,
-                           RagService ragService) {
+                           RagService ragService,
+                           ChunkingEngine chunkingEngine) {
         this.agentChatService = agentChatService;
         this.workOrderAiService = workOrderAiService;
         this.sqlAgentService = sqlAgentService;
         this.ragService = ragService;
+        this.chunkingEngine = chunkingEngine;
     }
 
     /** 对话查询（同步） */
@@ -75,6 +79,19 @@ public class AgentController {
     public R<Map<String, Object>> sqlQuery(@RequestParam(name="userId") Long userId,
                                             @RequestParam(name="message") String message) {
         return R.ok(sqlAgentService.query(userId, message));
+    }
+
+    /** 切片策略对比（教学用） */
+    @GetMapping("/chunking-demo")
+    public R<Map<String, Object>> chunkingDemo() {
+        String text;
+        try {
+            text = new String(java.nio.file.Files.readAllBytes(
+                java.nio.file.Path.of("../data/knowledge/工业设备维修手册.md")));
+        } catch (Exception e) {
+            text = "## 测试\n这是测试文本。\n\n这是第二段，用于验证切片效果。\n## 第二部分\n更多内容。";
+        }
+        return R.ok(chunkingEngine.compare(text));
     }
 
     /** RAG 知识库主题列表 */
