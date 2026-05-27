@@ -27,6 +27,10 @@ async function send(msg) {
   loading.value = true
   await scrollDown()
 
+  if (!auth.user?.id) {
+    messages.value.push({ role: 'ai', content: '请先登录后再使用AI助手。', verified: null })
+    loading.value = false; return
+  }
   try {
     const { data } = await api.post('/agent/sql-query', null, {
       params: { userId: auth.user.id, message: text }
@@ -36,7 +40,8 @@ async function send(msg) {
 
     messages.value.push({ role: 'ai', content: reply, verified })
   } catch(e) {
-    messages.value.push({ role: 'ai', content: '抱歉，AI服务暂时不可用。', verified: null })
+    const errMsg = e.response?.data?.message || e.message || '未知错误'
+    messages.value.push({ role: 'ai', content: '抱歉，AI服务暂时不可用。(' + errMsg + ')', verified: null })
   }
   loading.value = false
   await scrollDown()
