@@ -10,6 +10,7 @@ const saved = localStorage.getItem(STORAGE_KEY)
 const messages = ref(saved ? JSON.parse(saved) : [
   { role: 'ai', content: '你好！我是小福 🤖，你的企业工单分析助手。\n\n试试问我：\n• "2025年维修工单总利润多少？"\n• "古镇去年利润率最高的月份？"\n• "哪种服务类型亏损最多？"', verified: null }
 ])
+const selectedVerify = ref(null)
 
 // 保存到 localStorage
 watch(messages, (v) => localStorage.setItem(STORAGE_KEY, JSON.stringify(v)), { deep: true })
@@ -31,11 +32,12 @@ async function send(msg) {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    // 同时获取实际数据用于校验
+    // 拉取实际月度数据用于校验AI回答
     let verified = null
     try {
       const stats = await api.get('/work-order/stats-by-type', { params: { userId: auth.user.id } })
-      verified = stats.data.data
+      const monthly = await api.get('/work-order/monthly-stats', { params: { userId: auth.user.id } })
+      verified = { byType: stats.data.data, monthly: monthly.data.data }
     } catch(e) {}
 
     messages.value.push({ role: 'ai', content: reply, verified })
@@ -85,7 +87,8 @@ onMounted(() => {
         <div class="chat-box" ref="chatEl" style="flex:1">
           <div v-for="(m, i) in messages" :key="i"
                :class="'msg ' + (m.role === 'user' ? 'msg-user' : 'msg-ai')"
-               style="white-space:pre-line">{{ m.content }}</div>
+               :style="{whiteSpace:'pre-line', cursor: m.role==='ai'&&m.verified?'pointer':'default'}"
+               @click="m.role==='ai'&&m.verified?selectedVerify=selectedVerify===i?null:i:null">{{ m.content }}</div>
           <div v-if="loading" class="msg msg-ai" style="color:#999">分析中...</div>
 
           <!-- 快捷问题 -->
@@ -108,14 +111,25 @@ onMounted(() => {
       <h2 style="margin-bottom:12px">📊 实时数据</h2>
       <div class="card" style="font-size:13px;max-height:calc(100vh - 160px);overflow-y:auto">
         <p style="color:#999;font-size:12px;margin-bottom:12px">AI回复时自动对照实际数据，防止幻觉</p>
-        <div v-if="messages.filter(m=>m.verified).length === 0" style="color:#ccc;text-align:center;padding:40px 0">
-          发送一条消息后<br>这里会显示实际数据校验
+        <div v-if="selectedVerify === null" style="color:#ccc;text-align:center;padding:40px 0">
+          👆 点击AI的回复<br>查看实际数据校验
         </div>
-        <div v-for="(m, i) in messages.filter(m=>m.verified)" :key="'v'+i" style="margin-bottom:16px;border-bottom:1px solid #f0f0f0;padding-bottom:12px">
-          <p style="font-weight:600;margin-bottom:6px;font-size:12px;color:#999">校验 #{{ i+1 }}</p>
+        <div v-else>
+          <p style="font-weight:600;margin-bottom:12px;font-size:12px;color:#999">📊 数据校验</p>
+          <p style="font-size:11px;color:#999;margin-bottom:4px">月度利润 (最近6月)</p>
+          <table style="width:100%;font-size:11px;margin-bottom:12px">
+            <tr style="color:#999"><th style="text-align:left">月份</th><th style="text-align:right">单</th><th style="text-align:right">利润</th><th style="text-align:right">亏损</th></tr>
+            <tr v-for="r in (messages[selectedVerify]?.verified?.monthly||[]).slice(0,6)" :key="r.month">
+              <td>{{ r.month }}</td>
+              <td style="text-align:right">{{ r.orders }}</td>
+              <td style="text-align:right" :style="{color:(Number(r.profit)||0)>=0?'#2e7d32':'#c62828'}">¥{{ Number(r.profit||0).toLocaleString() }}</td>
+              <td style="text-align:right;color:#c62828">{{ r.loss_orders||0 }}</td>
+            </tr>
+          </table>
+          <p style="font-size:11px;color:#999;margin-bottom:4px">按类型统计</p>
           <table style="width:100%;font-size:11px">
-            <tr style="color:#999"><th style="text-align:left">类型</th><th style="text-align:right">单数</th><th style="text-align:right">利润</th></tr>
-            <tr v-for="r in (Array.isArray(m.verified)?m.verified.slice(0,5):[])" :key="r.service_type">
+            <tr style="color:#999"><th style="text-align:left">类型</th><th style="text-align:right">单</th><th style="text-align:right">利润</th></tr>
+            <tr v-for="r in (messages[selectedVerify]?.verified?.byType||[]).slice(0,5)" :key="r.service_type">
               <td>{{ r.service_type }}</td>
               <td style="text-align:right">{{ r.orders }}</td>
               <td style="text-align:right" :style="{color:Number(r.profit)>=0?'#2e7d32':'#c62828'}">¥{{ Number(r.profit||0).toLocaleString() }}</td>

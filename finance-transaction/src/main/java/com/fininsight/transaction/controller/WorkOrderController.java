@@ -3,8 +3,8 @@ package com.fininsight.transaction.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fininsight.common.result.R;
 import com.fininsight.transaction.entity.WorkOrder;
+import com.fininsight.transaction.mapper.WorkOrderMapper;
 import com.fininsight.transaction.service.WorkOrderService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,9 +12,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/work-order")
-@RequiredArgsConstructor
 public class WorkOrderController {
     private final WorkOrderService workOrderService;
+    private final WorkOrderMapper workOrderMapper;
+
+    public WorkOrderController(WorkOrderService workOrderService, WorkOrderMapper workOrderMapper) {
+        this.workOrderService = workOrderService;
+        this.workOrderMapper = workOrderMapper;
+    }
 
     @PostMapping
     public R<WorkOrder> create(@RequestBody WorkOrder order) {
@@ -46,5 +51,10 @@ public class WorkOrderController {
     @PutMapping("/{orderId}/status")
     public R<WorkOrder> updateStatus(@PathVariable("orderId") String orderId, @RequestParam(name="status") String status) {
         return R.ok(workOrderService.updateStatus(orderId, status));
+    }
+
+    @GetMapping("/monthly-stats")
+    public R<List<Map<String, Object>>> monthlyStats(@RequestParam(name="userId") Long userId) {
+        return R.ok(workOrderMapper.monthlyStats(userId));
     }
 }
