@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.fininsight.transaction.entity.WorkOrder;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 import java.util.List;
 import java.util.Map;
 
@@ -64,6 +65,10 @@ public interface WorkOrderMapper extends BaseMapper<WorkOrder> {
             "total_profit as profit, avg_profit_rate as avg_rate " +
             "FROM work_order_report WHERE user_id=#{userId} AND period='month' ORDER BY period_value DESC")
     List<Map<String, Object>> monthlyStatsFast(Long userId);
+
+    /** CAS 更新状态（乐观锁） */
+    @Update("UPDATE work_order SET status=#{status} WHERE order_id=#{orderId}")
+    int updateStatusCAS(String orderId, String status);
 
     /** 总体概览 */
     @Select("SELECT COUNT(*) as total, SUM(total_revenue) as revenue, " +

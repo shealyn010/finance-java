@@ -29,8 +29,8 @@ public class AgentChatService {
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
 
-    /** 用户对话上下文（生产环境应使用 Redis） */
-    private final Map<Long, StringBuilder> context = new ConcurrentHashMap<>();
+    /** 用户对话上下文（生产环境应使用 Redis）；StringBuffer 线程安全 */
+    private final Map<Long, StringBuffer> context = new ConcurrentHashMap<>();
 
     private static final String SYSTEM_PROMPT = """
             你是"小福"，企业工单AI分析助手。你可以：
@@ -156,7 +156,7 @@ public class AgentChatService {
 
     /** 建议上下文：近12月趋势 */
     private String buildAdviceContext(Long userId) {
-        StringBuilder sb = new StringBuilder();
+        StringBuffer sb = new StringBuffer();
         var ov = workOrderMapper.overview(userId);
         sb.append(String.format("## 总览\n%s单 | 利润¥%s | 利润率%s%%\n\n", ov.get("total"), ov.get("profit"), ov.get("avg_rate")));
         var monthly = workOrderMapper.monthlyStats(userId);
@@ -201,7 +201,7 @@ public class AgentChatService {
             // 亏损/利润类问题必须有月度数据
             boolean needMonthly = question.contains("亏损") || question.contains("哪个月") || question.contains("月份");
 
-            StringBuilder sb = new StringBuilder();
+            StringBuffer sb = new StringBuffer();
 
             // 年度×类型精准匹配
             if (year != null || svcType != null) {

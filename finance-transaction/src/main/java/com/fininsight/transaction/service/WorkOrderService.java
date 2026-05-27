@@ -108,11 +108,13 @@ public class WorkOrderService {
                 .eq(serviceType != null && !serviceType.isEmpty(), WorkOrder::getServiceType, serviceType)
                 .orderByDesc(WorkOrder::getOrderTime);
 
-        // COUNT缓存(60秒)，避免每页都扫百万行
+        // COUNT缓存(60秒)，synchronized防竞态
         String cacheKey = userId + "_" + (serviceType != null ? serviceType : "ALL");
-        if (System.currentTimeMillis() - countCacheTime > 60000) {
-            countCache.clear();
-            countCacheTime = System.currentTimeMillis();
+        synchronized (countCache) {
+            if (System.currentTimeMillis() - countCacheTime > 60000) {
+                countCache.clear();
+                countCacheTime = System.currentTimeMillis();
+            }
         }
         long total = countCache.computeIfAbsent(cacheKey, k -> {
             Long c = workOrderMapper.selectCount(qw);
@@ -135,10 +137,9 @@ public class WorkOrderService {
     }
 
     public WorkOrder updateStatus(String orderId, String status) {
-        WorkOrder order = workOrderMapper.selectById(orderId);
-        if (order == null) throw new BizException(404, "工单不存在");
-        order.setStatus(status);
-        workOrderMapper.updateById(order);
-        return order;
+        // CAS 乐观锁: 防止两个管理员同时改同一工单
+        int rows = workOrderMapper.updateStatusCAS(orderId, status);
+        if (rows == 0) throw new BizException(409, "工单已被他人修改，请刷新后重试");
+        return workOrderMapper.selectById(orderId);
     }
 }
