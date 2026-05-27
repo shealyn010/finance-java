@@ -32,9 +32,7 @@ async function send(msg) {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    const dataContext = '[SQL] ' + (data.data.sql || '') + '\n\n[数据]\n' + (data.data.dataContext || '')
-    // 直接用AI回答时基于的原始数据作为校验
-    const verified = dataContext
+    const dataContext = data.data.dataContext || ''
 
     messages.value.push({ role: 'ai', content: reply, verified })
   } catch(e) {
