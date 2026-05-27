@@ -2,6 +2,7 @@
 import { ref, nextTick, watch, onMounted } from 'vue'
 import { auth } from '../stores/auth.js'
 import api from '../api/index.js'
+import VerificationTable from '../components/VerificationTable.vue'
 
 const STORAGE_KEY = 'fininsight_chat_' + auth.user?.id
 
@@ -36,7 +37,7 @@ async function send(msg) {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    const dataContext = data.data.dataContext || ''
+    const verified = data.data.dataContext || ''
 
     messages.value.push({ role: 'ai', content: reply, verified })
   } catch(e) {
@@ -111,11 +112,11 @@ onMounted(() => {
       <div class="card" style="font-size:13px;max-height:calc(100vh - 160px);overflow-y:auto">
         <p style="color:#999;font-size:12px;margin-bottom:12px">AI回复时自动对照实际数据，防止幻觉</p>
         <div v-if="selectedVerify === null" style="color:#ccc;text-align:center;padding:40px 0">
-          👆 点击AI的回复<br>查看它基于的原始数据
+          👆 点击AI的回复<br>查看查询结果
         </div>
         <div v-else>
-          <p style="font-weight:600;margin-bottom:8px;font-size:12px;color:#999">📊 AI看到的原始数据</p>
-          <pre style="font-size:11px;color:#666;white-space:pre-wrap;line-height:1.6;background:#fafbfc;padding:12px;border-radius:8px;max-height:60vh;overflow-y:auto">{{ messages[selectedVerify]?.verified || '(无数据)' }}</pre>
+          <p style="font-weight:600;margin-bottom:8px;font-size:12px;color:#999">📊 查询结果</p>
+          <VerificationTable :data="messages[selectedVerify]?.verified" />
         </div>
       </div>
     </div>
