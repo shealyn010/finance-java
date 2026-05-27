@@ -19,10 +19,9 @@ public class AgentController {
 
     /** 对话查询（同步） */
     @PostMapping("/chat")
-    public R<Map<String, String>> chat(@RequestParam(name="userId") Long userId,
+    public R<Map<String, Object>> chat(@RequestParam(name="userId") Long userId,
                                         @RequestParam(name="message") String message) {
-        String reply = agentChatService.chat(userId, message);
-        return R.ok(Map.of("reply", reply, "role", "assistant"));
+        return R.ok(agentChatService.chat(userId, message));
     }
 
     /** 对话查询（流式 SSE） */

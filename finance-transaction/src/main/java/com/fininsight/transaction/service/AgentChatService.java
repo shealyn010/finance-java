@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +42,7 @@ public class AgentChatService {
 
     /** 同步对话 */
     @SuppressWarnings("unchecked")
-    public String chat(Long userId, String message) {
+    public Map<String, Object> chat(Long userId, String message) {
         try {
             // 1. 获取用户数据上下文
             String dataContext = buildDataContext(userId);
@@ -65,11 +68,22 @@ public class AgentChatService {
 
             List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
             Map<String, Object> msg = (Map<String, Object>) choices.get(0).get("message");
-            return (String) msg.getOrDefault("content", "AI 服务暂时不可用");
+            String reply = (String) msg.getOrDefault("content", "AI 服务暂时不可用");
+
+            // 返回 reply + AI 基于的原始数据上下文(供前端校验)
+            Map<String, Object> result = new HashMap<>();
+            result.put("reply", reply);
+            result.put("role", "assistant");
+            result.put("dataContext", dataContext);
+            return result;
 
         } catch (Exception e) {
             log.error("[Agent对话] 失败: {}", e.getMessage());
-            return "抱歉，我暂时无法处理您的查询，请稍后重试。";
+            Map<String, Object> fallback = new HashMap<>();
+            fallback.put("reply", "抱歉，我暂时无法处理您的查询。");
+            fallback.put("role", "assistant");
+            fallback.put("dataContext", "暂无数据");
+            return fallback;
         }
     }
 

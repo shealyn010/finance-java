@@ -32,13 +32,9 @@ async function send(msg) {
       params: { userId: auth.user.id, message: text }
     })
     const reply = data.data.reply
-    // 拉取实际月度数据用于校验AI回答
-    let verified = null
-    try {
-      const stats = await api.get('/work-order/stats-by-type', { params: { userId: auth.user.id } })
-      const monthly = await api.get('/work-order/monthly-stats', { params: { userId: auth.user.id } })
-      verified = { byType: stats.data.data, monthly: monthly.data.data }
-    } catch(e) {}
+    const dataContext = data.data.dataContext || ''
+    // 直接用AI回答时基于的原始数据作为校验
+    const verified = dataContext
 
     messages.value.push({ role: 'ai', content: reply, verified })
   } catch(e) {
@@ -112,29 +108,11 @@ onMounted(() => {
       <div class="card" style="font-size:13px;max-height:calc(100vh - 160px);overflow-y:auto">
         <p style="color:#999;font-size:12px;margin-bottom:12px">AI回复时自动对照实际数据，防止幻觉</p>
         <div v-if="selectedVerify === null" style="color:#ccc;text-align:center;padding:40px 0">
-          👆 点击AI的回复<br>查看实际数据校验
+          👆 点击AI的回复<br>查看它基于的原始数据
         </div>
         <div v-else>
-          <p style="font-weight:600;margin-bottom:12px;font-size:12px;color:#999">📊 数据校验</p>
-          <p style="font-size:11px;color:#999;margin-bottom:4px">月度利润 (最近6月)</p>
-          <table style="width:100%;font-size:11px;margin-bottom:12px">
-            <tr style="color:#999"><th style="text-align:left">月份</th><th style="text-align:right">单</th><th style="text-align:right">利润</th><th style="text-align:right">亏损</th></tr>
-            <tr v-for="r in (messages[selectedVerify]?.verified?.monthly||[]).slice(0,6)" :key="r.month">
-              <td>{{ r.month }}</td>
-              <td style="text-align:right">{{ r.orders }}</td>
-              <td style="text-align:right" :style="{color:(Number(r.profit)||0)>=0?'#2e7d32':'#c62828'}">¥{{ Number(r.profit||0).toLocaleString() }}</td>
-              <td style="text-align:right;color:#c62828">{{ r.loss_orders||0 }}</td>
-            </tr>
-          </table>
-          <p style="font-size:11px;color:#999;margin-bottom:4px">按类型统计</p>
-          <table style="width:100%;font-size:11px">
-            <tr style="color:#999"><th style="text-align:left">类型</th><th style="text-align:right">单</th><th style="text-align:right">利润</th></tr>
-            <tr v-for="r in (messages[selectedVerify]?.verified?.byType||[]).slice(0,5)" :key="r.service_type">
-              <td>{{ r.service_type }}</td>
-              <td style="text-align:right">{{ r.orders }}</td>
-              <td style="text-align:right" :style="{color:Number(r.profit)>=0?'#2e7d32':'#c62828'}">¥{{ Number(r.profit||0).toLocaleString() }}</td>
-            </tr>
-          </table>
+          <p style="font-weight:600;margin-bottom:8px;font-size:12px;color:#999">📊 AI看到的原始数据</p>
+          <pre style="font-size:11px;color:#666;white-space:pre-wrap;line-height:1.6;background:#fafbfc;padding:12px;border-radius:8px;max-height:60vh;overflow-y:auto">{{ messages[selectedVerify]?.verified || '(无数据)' }}</pre>
         </div>
       </div>
     </div>
