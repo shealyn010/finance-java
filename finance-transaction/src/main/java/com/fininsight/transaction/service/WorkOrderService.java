@@ -14,17 +14,18 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import com.fininsight.transaction.config.RabbitConfig;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @Service
 public class WorkOrderService {
     private final WorkOrderMapper workOrderMapper;
-    private final WorkOrderAiService aiService;
+    private final RabbitTemplate rabbitTemplate;
 
     public WorkOrderService(WorkOrderMapper workOrderMapper,
-                            @Lazy WorkOrderAiService aiService) {
+                            RabbitTemplate rabbitTemplate) {
         this.workOrderMapper = workOrderMapper;
-        this.aiService = aiService;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     public WorkOrder create(WorkOrder order) {
@@ -70,11 +71,12 @@ public class WorkOrderService {
         order.setCreatedAt(LocalDateTime.now());
         workOrderMapper.insert(order);
 
-        // 异步触发 AI 分析（不阻塞创建接口返回）
-        String id = order.getOrderId();
-        CompletableFuture.runAsync(() -> {
-            try { aiService.analyzeOrder(id); } catch (Exception ignored) {}
-        });
+        // 投递 MQ 异步 AI 分析（削峰填谷，不阻塞创建接口）
+        try {
+            rabbitTemplate.convertAndSend(RabbitConfig.AI_ANALYZE_QUEUE, order.getOrderId());
+        } catch (Exception ignored) {
+            // MQ 不可用时降级为同步兜底
+        }
 
         return order;
     }
