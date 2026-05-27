@@ -11,7 +11,7 @@ function formatVerified(raw) {
     const arr = JSON.parse(m[0])
     if (!Array.isArray(arr) || !arr.length) return raw
     // 转成纯文本行，不暴露字段名
-    return arr.map(r => Object.values(r).join('  |  ')).join('\n')
+    return arr.map(r => Object.values(r).filter(v => v !== null && v !== '').join('  |  ')).join('\n')
   } catch { return raw }
 }
 
