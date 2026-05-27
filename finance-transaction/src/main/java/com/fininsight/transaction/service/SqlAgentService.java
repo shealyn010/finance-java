@@ -1,6 +1,7 @@
 package com.fininsight.transaction.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -8,16 +9,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.*;
 
-/**
- * Text-to-SQL Agent: LLM 根据 schema 自动生成 SQL 查询
- * 不再硬编码关键词匹配，让 AI 自己决定查什么
- */
 @Slf4j
 @Service
 public class SqlAgentService {
     private final JdbcTemplate jdbc;
     private final WebClient webClient;
-    private final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private static final String SCHEMA = """
         表名: work_order
