@@ -12,9 +12,24 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.time.Duration;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
+
 @EnableCaching
 @Configuration
 public class RedisConfig {
+
+    /** 通用Redis(String序列化, Lua脚本兼容) */
+    @Bean
+    public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, String> t = new RedisTemplate<>();
+        t.setConnectionFactory(factory);
+        t.setKeySerializer(new StringRedisSerializer());
+        t.setValueSerializer(new StringRedisSerializer());
+        return t;
+    }
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory factory) {
