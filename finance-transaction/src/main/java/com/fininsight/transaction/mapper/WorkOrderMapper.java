@@ -44,6 +44,21 @@ public interface WorkOrderMapper extends BaseMapper<WorkOrder> {
             "GROUP BY year ORDER BY year DESC")
     List<Map<String, Object>> yearlyStats(Long userId);
 
+    /** 按类型统计材料费占比 */
+    @Select("SELECT service_type, COUNT(*) as orders, " +
+            "SUM(material_cost) as total_material, SUM(total_revenue) as revenue, " +
+            "ROUND(SUM(material_cost)/SUM(total_revenue)*100,2) as material_ratio " +
+            "FROM work_order WHERE user_id = #{userId} GROUP BY service_type ORDER BY material_ratio DESC")
+    List<Map<String, Object>> materialRatioByType(Long userId);
+
+    /** 按年+类型统计材料费占比 */
+    @Select("SELECT DATE_FORMAT(order_time,'%Y') as year, service_type, COUNT(*) as orders, " +
+            "SUM(material_cost) as total_material, SUM(total_revenue) as revenue, " +
+            "ROUND(SUM(material_cost)/SUM(total_revenue)*100,2) as material_ratio " +
+            "FROM work_order WHERE user_id = #{userId} " +
+            "GROUP BY year, service_type ORDER BY year DESC, material_ratio DESC")
+    List<Map<String, Object>> materialRatioByYearType(Long userId);
+
     /** 总体概览 */
     @Select("SELECT COUNT(*) as total, SUM(total_revenue) as revenue, " +
             "SUM(profit) as profit, AVG(profit_rate) as avg_rate, " +

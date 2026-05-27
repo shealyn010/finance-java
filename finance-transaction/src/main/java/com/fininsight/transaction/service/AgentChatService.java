@@ -46,7 +46,8 @@ public class AgentChatService {
         try {
             // 1. 意图分类（关键词强制定路由）
             String intent = classifyIntent(message);
-            if (message.contains("哪个月") || message.contains("亏损") || message.contains("月份")) {
+            if (message.contains("哪个月") || message.contains("亏损") || message.contains("月份")
+                || message.contains("材料费") || message.contains("成本") || message.contains("占比")) {
                 intent = "specific_query";
             }
 
@@ -217,6 +218,20 @@ public class AgentChatService {
                     matched++;
                 }
                 if (matched == 0) sb.append("(无匹配)\n");
+                sb.append("\n");
+            }
+
+            // 材料费/成本类问题
+            if (question.contains("材料费") || question.contains("成本") || question.contains("占比")) {
+                var mr = year != null ? workOrderMapper.materialRatioByYearType(userId)
+                                     : workOrderMapper.materialRatioByType(userId);
+                sb.append("## 材料费占比\n| 年份 | 类型 | 单数 | 材料费 | 收入 | 占比 |\n|------|------|------|--------|------|------|\n");
+                for (var r : mr) {
+                    String ry = r.get("year") != null ? (String) r.get("year") : (year != null ? year : "");
+                    sb.append(String.format("| %s | %s | %s | ¥%s | ¥%s | %s%% |\n",
+                        ry, r.get("service_type"), r.get("orders"),
+                        r.get("total_material"), r.get("revenue"), r.get("material_ratio")));
+                }
                 sb.append("\n");
             }
 
