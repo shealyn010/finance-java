@@ -1,6 +1,6 @@
 -- FinInsight 数据库初始化
-CREATE DATABASE IF NOT EXISTS fininsight DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE fininsight;
+CREATE DATABASE IF NOT EXISTS workmind DEFAULT CHARSET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE workmind;
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS `user` (

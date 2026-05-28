@@ -9,8 +9,8 @@
     <artifactId>finance-java</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>FinInsight - 企业工单AI分析平台</name>
-    <description>基于Spring Cloud微服务的企业工单智能分析系统</description>
+    <name>WorkMind - 企业工单AI智能平台</name>
+    <description>WorkMind - 企业工单+库存+AI Agent智能管理平台</description>
 
     <modules>
         <module>finance-common</module>

@@ -1,4 +1,4 @@
-# FinInsight 项目指南
+# WorkMind 项目指南
 
 ## 启动
 ```bash
