@@ -42,6 +42,7 @@ public class InventoryService {
     }
 
     public Map<String, Object> deduct(String partId, int qty, String orderId, String userId) {
+        if (qty <= 0) throw new BizException(400, "领取数量必须为正数");
         // 层1: Redis Lua 原子扣 + 一人一单
         Long ok = redisTemplate.execute(deductScript, List.of("inv:" + partId, "claimed:" + partId + ":" + userId), String.valueOf(qty), userId);
         if (ok != null && ok == -1) {

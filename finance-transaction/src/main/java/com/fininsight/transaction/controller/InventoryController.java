@@ -48,10 +48,11 @@ public class InventoryController {
     @GetMapping("/refund-stress")
     public R<Map<String, Object>> refundStress(@RequestParam(defaultValue = "PART001") String partId) {
         inventoryService.loadToRedis();
-        String orderId = "REFUND-TEST-001";
+        String uid = "refund-test-" + System.currentTimeMillis();
+        String orderId = "REFUND-" + uid;
         int qty = 3;
         // 先扣再退
-        inventoryService.deduct(partId, qty, orderId, "admin");
+        inventoryService.deduct(partId, qty, orderId, uid);
 
         var success = new java.util.concurrent.atomic.AtomicInteger(0);
         var rejected = new java.util.concurrent.atomic.AtomicInteger(0);
