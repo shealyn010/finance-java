@@ -36,6 +36,7 @@ async function fetchOrders() {
 
 function goPage(p) { page.value = p; fetchOrders() }
 function onChangeType() { page.value = 1; fetchOrders() }
+function onFilterChange() { page.value = 1; fetchOrders() }
 
 async function createOrder() {
   error.value = ''
@@ -161,7 +162,7 @@ onMounted(fetchOrders)
           <option value="">全部类型</option>
           <option v-for="t in ['安装','维修','巡检','保养','定制']" :key="t" :value="t">{{ t }}</option>
         </select>
-        <select v-model="statusFilter" @change="page=1;fetchOrders()" style="width:110px">
+        <select v-model="statusFilter" @change="onFilterChange" style="width:110px">
           <option value="">全部状态</option>
           <option v-for="(label,key) in statusLabels" :key="key" :value="key">{{ label }}</option>
         </select>
