@@ -1,0 +1,6 @@
+项目简述：面向企业工单管理与库存调度的AI驱动微服务平台，集成Multi-Agent智能路由、Redis秒杀、RabbitMQ削峰、Text-to-SQL自然语言查询，支撑210万工单数据的高并发场景。
+核心技术：Java 21, Spring Boot 3.2, MyBatis-Plus, Redis(Lua), RabbitMQ, MySQL, DeepSeek API, Vue3
+核心职责：
+Multi-Agent智能路由架构设计：设计Router Agent基于LLM语义分析实现RAG知识检索/SQL数据查询/建议分析三引擎自动分发，替代传统关键词匹配路由，意图识别准确率从~70%提升至95%+。实现分层对话记忆（工作记忆5轮完整保留+短期记忆LLM摘要压缩+长期记忆向量库检索），解决多轮追问场景下的上下文遗忘问题。
+高并发库存秒杀与异步削峰：设计Redis Lua脚本实现原子库存扣减+一人一单防重+退库幂等三级防护，经500线程/150次并发压测，10张券正好10次成功、0超卖、退库20线程并发仅1次成功防重复。引入RabbitMQ异步削峰将工单写入从直冲MySQL改为队列缓冲，连接池压力降低97%，API层零阻塞。
+AI大模型工程化落地与性能优化：构建Text-to-SQL引擎让LLM根据Schema自动生成SELECT语句查询210万工单数据，实现SQL执行失败自动修复重试机制。针对深分页13.3s延迟，通过联合索引(user_id+order_time)+COUNT缓存+游标分页优化至0.16s（99%↓）。报表查询通过物化视图work_order_report从实时GROUP BY 15s降至0.01s（1000x），Redis缓存月度/类型统计接口从0.44s降至0.004s（100x）。
