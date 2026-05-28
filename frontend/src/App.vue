@@ -5,6 +5,7 @@ import Login from './views/Login.vue'
 import WorkOrders from './views/WorkOrders.vue'
 import AgentChat from './views/AgentChat.vue'
 import Report from './views/Report.vue'
+import Inventory from './views/Inventory.vue'
 
 const loggedIn = ref(auth.isLoggedIn())
 
@@ -14,6 +15,7 @@ function doLogout() { auth.logout(); loggedIn.value = false }
 
 const nav = [
   { key: 'orders', label: '工单管理', icon: '📋' },
+  { key: 'inventory', label: '配件库存', icon: '📦' },
   { key: 'agent', label: 'AI 助手', icon: '🤖' },
   { key: 'report', label: '报表', icon: '📊' },
 ]
@@ -37,6 +39,7 @@ const active = ref('orders')
     </aside>
     <main class="main">
       <WorkOrders v-if="active === 'orders'" />
+      <Inventory v-if="active === 'inventory'" />
       <AgentChat v-if="active === 'agent'" />
       <Report v-if="active === 'report'" />
     </main>
