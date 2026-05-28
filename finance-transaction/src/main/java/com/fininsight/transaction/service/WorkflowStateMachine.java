@@ -23,21 +23,19 @@ import java.util.*;
 @Component
 public class WorkflowStateMachine {
 
-    private static final Map<String, Set<String>> ALLOWED;
+    private static final Map<String, Set<String>> ALLOWED = new HashMap<>();
     static {
-        ALLOWED = Map.ofEntries(
-            "pending",      Set.of("assigned", "closed"),
-            "assigned",     Set.of("accepted", "closed", "pending"),
-            "accepted",     Set.of("arrived", "closed"),
-            "arrived",      Set.of("in_progress", "closed"),
-            "in_progress",  Set.of("completed", "parts_needed", "closed"),
-            "parts_needed", Set.of("in_progress", "closed"),
-            "completed",    Set.of("confirmed", "closed"),
-            "confirmed",    Set.of("settled", "closed"),
-            "settled",      Set.of("closed"),
-            "closed",       Set.of("reopen"),
-            "reopen",       Set.of("in_progress", "completed")
-        );
+        ALLOWED.put("pending",      Set.of("assigned", "closed"));
+        ALLOWED.put("assigned",     Set.of("accepted", "closed", "pending"));
+        ALLOWED.put("accepted",     Set.of("arrived", "closed"));
+        ALLOWED.put("arrived",      Set.of("in_progress", "closed"));
+        ALLOWED.put("in_progress",  Set.of("completed", "parts_needed", "closed"));
+        ALLOWED.put("parts_needed", Set.of("in_progress", "closed"));
+        ALLOWED.put("completed",    Set.of("confirmed", "closed"));
+        ALLOWED.put("confirmed",    Set.of("settled", "closed"));
+        ALLOWED.put("settled",      Set.of());
+        ALLOWED.put("closed",       Set.of("reopen"));
+        ALLOWED.put("reopen",       Set.of("in_progress", "completed"));
     }
 
     private static final Map<String, String> LABELS = Map.ofEntries(
