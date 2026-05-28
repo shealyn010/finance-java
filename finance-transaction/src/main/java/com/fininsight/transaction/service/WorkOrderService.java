@@ -102,14 +102,15 @@ public class WorkOrderService {
     private final Map<String, Long> countCache = new java.util.concurrent.ConcurrentHashMap<>();
     private volatile long countCacheTime = 0;
 
-    public Page<WorkOrder> listByUser(Long userId, int page, int size, String serviceType) {
+    public Page<WorkOrder> listByUser(Long userId, int page, int size, String serviceType, String status) {
         LambdaQueryWrapper<WorkOrder> qw = new LambdaQueryWrapper<WorkOrder>()
                 .eq(WorkOrder::getUserId, userId)
                 .eq(serviceType != null && !serviceType.isEmpty(), WorkOrder::getServiceType, serviceType)
+                .eq(status != null && !status.isEmpty(), WorkOrder::getStatus, status)
                 .orderByDesc(WorkOrder::getOrderTime);
 
         // COUNT缓存(60秒)，synchronized防竞态
-        String cacheKey = userId + "_" + (serviceType != null ? serviceType : "ALL");
+        String cacheKey = userId + "_" + (serviceType != null ? serviceType : "ALL") + "_" + (status != null ? status : "ALL");
         synchronized (countCache) {
             if (System.currentTimeMillis() - countCacheTime > 60000) {
                 countCache.clear();
