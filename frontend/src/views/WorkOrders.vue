@@ -180,10 +180,11 @@ onMounted(fetchOrders)
             <td><span :class="'tag '+(o.aiCategory==='高利润'?'tag-high':o.aiCategory==='亏损'?'tag-loss':'tag-normal')">{{ o.aiCategory||'未分类' }}</span></td>
             <td style="font-size:13px;color:#999">{{ o.orderTime?.slice(0,10) }}</td>
             <td>
-              <select v-if="canTransition(o.status)" @change="changeStatus(o, $event.target.value)" style="width:auto;padding:4px 8px;font-size:12px;border-radius:6px" value="">
-                <option value="">操作...</option>
-                <option v-for="ns in nextStatusMap[o.status]" :key="ns" :value="ns">{{ actionLabel[ns] || ns }}</option>
-              </select>
+              <template v-if="canTransition(o.status)">
+                <button v-for="ns in (nextStatusMap[o.status]||[])" :key="ns"
+                  class="btn btn-outline" style="font-size:11px;padding:3px 8px;margin:1px"
+                  @click="changeStatus(o, ns)">{{ actionLabel[ns] || ns }}</button>
+              </template>
               <span v-else style="color:#ccc;font-size:11px">-</span>
             </td>
           </tr>
