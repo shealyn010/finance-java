@@ -12,6 +12,7 @@ const total = ref(0)
 const size = ref(30)
 const keyword = ref('')
 const typeFilter = ref('')
+const statusFilter = ref('')
 const totalPages = computed(() => Math.ceil(total.value / size.value))
 const emptyForm = () => ({
   userId: auth.user.id, customer: '', serviceType: '维修', serviceDesc: '',
@@ -25,6 +26,7 @@ async function fetchOrders() {
   try {
     const params = { userId: auth.user.id, page: page.value, size: size.value }
     if (typeFilter.value) params.serviceType = typeFilter.value
+    if (statusFilter.value) params.status = statusFilter.value
     const { data } = await api.get('/work-order', { params })
     orders.value = data.data?.records || []
     total.value = data.data?.total || 0
@@ -97,13 +99,12 @@ const nextStatusMap = {
   completed: ['confirmed', 'closed'],
   confirmed: ['settled', 'closed'],
   settled: [],
-  closed: ['reopen']
+  closed: ['completed']
 }
 const actionLabel = {
   assigned:'分派技术员', accepted:'接单', arrived:'到场签到',
   in_progress:'开始维修', parts_needed:'领料出库', completed:'维修完成',
-  confirmed:'客户确认', settled:'财务结算', closed:'关单',
-  reopen:'撤销关单'
+  confirmed:'客户确认', settled:'财务结算', closed:'关单'
 }
 
 const toast = ref('')
@@ -150,10 +151,13 @@ onMounted(fetchOrders)
       </div>
       <div style="display:flex; gap:10px; margin-bottom:16px">
         <input v-model="keyword" placeholder="🔍 搜索客户/地点/技术员..." style="flex:1" />
-        <select v-model="typeFilter" @change="onChangeType" style="width:120px">
+        <select v-model="typeFilter" @change="onChangeType" style="width:110px">
           <option value="">全部类型</option>
-          <option value="安装">安装</option><option value="维修">维修</option>
-          <option value="巡检">巡检</option><option value="保养">保养</option><option value="定制">定制</option>
+          <option v-for="t in ['安装','维修','巡检','保养','定制']" :key="t" :value="t">{{ t }}</option>
+        </select>
+        <select v-model="statusFilter" @change="page=1;fetchOrders()" style="width:110px">
+          <option value="">全部状态</option>
+          <option v-for="(label,key) in statusLabels" :key="key" :value="key">{{ label }}</option>
         </select>
       </div>
 

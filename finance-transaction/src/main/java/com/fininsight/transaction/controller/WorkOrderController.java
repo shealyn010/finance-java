@@ -62,8 +62,9 @@ public class WorkOrderController {
         var order = workOrderService.getById(orderId);
         if (order == null) throw new com.fininsight.common.exception.BizException(404, "工单不存在");
         stateMachine.validate(order.getStatus(), status);
-        // 关单超7天不可撤销
-        if ("reopen".equals(status) && order.getOrderTime() != null
+        // 关单7天内可撤销(回到completed)
+        if ("completed".equals(status) && "closed".equals(order.getStatus())
+            && order.getOrderTime() != null
             && java.time.Duration.between(order.getOrderTime(), java.time.LocalDateTime.now()).toDays() > 7) {
             throw new com.fininsight.common.exception.BizException(400, "关单超过7天不可撤销");
         }

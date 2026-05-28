@@ -34,8 +34,7 @@ public class WorkflowStateMachine {
         ALLOWED.put("completed",    Set.of("confirmed", "closed"));
         ALLOWED.put("confirmed",    Set.of("settled", "closed"));
         ALLOWED.put("settled",      Set.of("closed"));
-        ALLOWED.put("closed",       Set.of("reopen"));
-        ALLOWED.put("reopen",       Set.of("in_progress", "completed"));
+        ALLOWED.put("closed",       Set.of("completed"));
     }
 
     private static final Map<String, String> LABELS = Map.ofEntries(
