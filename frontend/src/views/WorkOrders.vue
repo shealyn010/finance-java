@@ -106,7 +106,6 @@ const actionLabel = {
   in_progress:'开始维修', parts_needed:'领料出库', completed:'维修完成',
   confirmed:'客户确认', settled:'财务结算', closed:'关单'
 }
-}
 
 const toast = ref('')
 async function changeStatus(order, newStatus) {
