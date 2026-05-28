@@ -38,8 +38,9 @@ public class WorkOrderController {
             @RequestParam(name="userId") Long userId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String serviceType) {
-        return R.ok(workOrderService.listByUser(userId, page, size, serviceType));
+            @RequestParam(required = false) String serviceType,
+            @RequestParam(required = false) String status) {
+        return R.ok(workOrderService.listByUser(userId, page, size, serviceType, status));
     }
 
     @GetMapping("/profit-by-location")
