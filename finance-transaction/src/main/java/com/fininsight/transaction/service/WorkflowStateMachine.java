@@ -25,7 +25,7 @@ public class WorkflowStateMachine {
 
     private static final Map<String, Set<String>> ALLOWED;
     static {
-        ALLOWED = Map.of(
+        ALLOWED = Map.ofEntries(
             "pending",      Set.of("assigned", "closed"),
             "assigned",     Set.of("accepted", "closed", "pending"),
             "accepted",     Set.of("arrived", "closed"),
