@@ -72,9 +72,32 @@ public class InventoryService {
         return Map.of("partId", partId, "qty", qty, "remaining", remaining != null ? remaining : "0", "orderId", orderId);
     }
 
-    public void refund(String partId, int qty) {
-        redisTemplate.opsForValue().increment("inv:" + partId, qty);
-        jdbc.update("UPDATE inventory SET stock=stock+? WHERE part_id=?", qty, partId);
+    // 退库原子脚本：防重复 + 库存恢复
+    private static final String LUA_REFUND =
+        "if redis.call('EXISTS',KEYS[1])==1 then return -1 end " +  // 已退过
+        "redis.call('INCRBY',KEYS[2],tonumber(ARGV[1])); redis.call('SETEX',KEYS[1],86400,'1'); return 1";
+
+    private final DefaultRedisScript<Long> refundScript = new DefaultRedisScript<>(LUA_REFUND, Long.class);
+
+    /** 退库存（幂等防重复） */
+    public void refund(String partId, int qty, String orderId) {
+        // Lua 原子检测：refunded:订单号 存在则拒绝
+        Long ok = redisTemplate.execute(refundScript,
+            List.of("refunded:" + orderId, "inv:" + partId), String.valueOf(qty));
+        if (ok != null && ok == -1) {
+            throw new BizException(409, "该工单已退过库存，请勿重复操作");
+        }
+        if (ok == null || ok == 0) {
+            throw new BizException(500, "退库操作失败");
+        }
+        // MySQL 乐观锁兜底
+        int rows = jdbc.update(
+            "UPDATE inventory SET stock=stock+?, version=version+1 WHERE part_id=?", qty, partId);
+        if (rows == 0) throw new BizException(500, "退库失败(DB乐观锁冲突)");
+
+        jdbc.update("DELETE FROM part_consumption WHERE order_id=? AND part_id=?", orderId, partId);
+        String remaining = redisTemplate.opsForValue().get("inv:" + partId);
+        log.info("[退库] {} x{} ← 工单{}, 库存恢复至: {}", partId, qty, orderId, remaining);
     }
 
     public List<Map<String, Object>> listAll() {

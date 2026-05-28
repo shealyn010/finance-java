@@ -35,11 +35,54 @@ public class InventoryController {
         return R.ok(inventoryService.deduct(partId, qty, orderId, userId));
     }
 
-    /** 退库存 */
+    /** 退库存（幂等防重复） */
     @PostMapping("/refund")
-    public R<String> refund(@RequestParam String partId, @RequestParam int qty) {
-        inventoryService.refund(partId, qty);
+    public R<String> refund(@RequestParam String partId,
+                             @RequestParam int qty,
+                             @RequestParam String orderId) {
+        inventoryService.refund(partId, qty, orderId);
         return R.ok("已退回");
+    }
+
+    /** 退库并发测试 — 验证多退不会超加 */
+    @GetMapping("/refund-stress")
+    public R<Map<String, Object>> refundStress(@RequestParam(defaultValue = "PART001") String partId) {
+        inventoryService.loadToRedis();
+        String orderId = "REFUND-TEST-001";
+        int qty = 3;
+        // 先扣再退
+        inventoryService.deduct(partId, qty, orderId, "admin");
+
+        var success = new java.util.concurrent.atomic.AtomicInteger(0);
+        var rejected = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        // 20个线程同时退同一工单，只有1个应该成功
+        List<Thread> workers = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            workers.add(new Thread(() -> {
+                try {
+                    inventoryService.refund(partId, qty, orderId);
+                    success.incrementAndGet();
+                } catch (Exception e) {
+                    rejected.incrementAndGet();
+                }
+            }));
+        }
+        workers.forEach(Thread::start);
+        workers.forEach(t -> { try { t.join(); } catch (InterruptedException ignored) {} });
+
+        String stock = inventoryService.listAll().stream()
+            .filter(r -> partId.equals(r.get("part_id"))).findFirst()
+            .map(r -> String.valueOf(r.get("redis_stock"))).orElse("?");
+
+        return R.ok(Map.of(
+            "orderId", orderId,
+            "qty", qty,
+            "refund_success", success.get(),
+            "refund_rejected", rejected.get(),
+            "current_stock", stock,
+            "note", "20线程同时退同一工单,只有1个成功→库存只恢复" + qty + "个,不会多退"
+        ));
     }
 
     /** 并发抢购测试 — 模拟多人抢券 */
