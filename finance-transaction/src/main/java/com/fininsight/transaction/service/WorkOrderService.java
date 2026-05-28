@@ -136,6 +136,10 @@ public class WorkOrderService {
         return workOrderMapper.statsByServiceType(userId);
     }
 
+    public WorkOrder getById(String orderId) {
+        return workOrderMapper.selectById(orderId);
+    }
+
     public WorkOrder updateStatus(String orderId, String status) {
         // CAS 乐观锁: 防止两个管理员同时改同一工单
         int rows = workOrderMapper.updateStatusCAS(orderId, status);

@@ -58,6 +58,15 @@ public class WorkOrderController {
 
     @PutMapping("/{orderId}/status")
     public R<WorkOrder> updateStatus(@PathVariable("orderId") String orderId, @RequestParam(name="status") String status) {
+        // 状态机校验流转合法性
+        var order = workOrderService.getById(orderId);
+        if (order == null) throw new com.fininsight.common.exception.BizException(404, "工单不存在");
+        stateMachine.validate(order.getStatus(), status);
+        // 关单超7天不可撤销
+        if ("reopen".equals(status) && order.getOrderTime() != null
+            && java.time.Duration.between(order.getOrderTime(), java.time.LocalDateTime.now()).toDays() > 7) {
+            throw new com.fininsight.common.exception.BizException(400, "关单超过7天不可撤销");
+        }
         return R.ok(workOrderService.updateStatus(orderId, status));
     }
 
