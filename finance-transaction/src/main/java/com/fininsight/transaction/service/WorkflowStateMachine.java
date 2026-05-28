@@ -33,7 +33,7 @@ public class WorkflowStateMachine {
         ALLOWED.put("parts_needed", Set.of("in_progress", "closed"));
         ALLOWED.put("completed",    Set.of("confirmed", "closed"));
         ALLOWED.put("confirmed",    Set.of("settled", "closed"));
-        ALLOWED.put("settled",      Set.of());
+        ALLOWED.put("settled",      Set.of("closed"));
         ALLOWED.put("closed",       Set.of("reopen"));
         ALLOWED.put("reopen",       Set.of("in_progress", "completed"));
     }

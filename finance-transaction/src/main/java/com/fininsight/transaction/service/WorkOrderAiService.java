@@ -50,6 +50,18 @@ public class WorkOrderAiService {
     public void analyzeOrder(String orderId) {
         WorkOrder order = workOrderMapper.selectById(orderId);
         if (order == null) return;
+        // 纯规则分类（零Token，Ollama可选）
+        double rate = order.getProfitRate() != null ? order.getProfitRate().doubleValue() : 0;
+        String cat = rate > 40 ? "高利润" : rate < 10 ? "亏损" : "常规";
+        order.setAiCategory(cat);
+        order.setAiAnalyzed(1);
+        workOrderMapper.updateById(order);
+        log.info("[AI分析] {}: {}", orderId.substring(0,12), cat);
+    }
+
+    public void _analyzeOrder_old(String orderId) {
+        WorkOrder order = workOrderMapper.selectById(orderId);
+        if (order == null) return;
 
         try {
             String prompt = PROMPT_TEMPLATE + String.format(
