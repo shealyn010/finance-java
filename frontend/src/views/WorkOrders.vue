@@ -104,7 +104,9 @@ const nextStatusMap = {
 const actionLabel = {
   assigned:'分派技术员', accepted:'接单', arrived:'到场签到',
   in_progress:'开始维修', parts_needed:'领料出库', completed:'维修完成',
-  confirmed:'客户确认', settled:'财务结算', closed:'关单'
+  confirmed:'客户确认', settled:'财务结算', closed:'关单',
+  'closed→completed':'撤销关单'
+}
 }
 
 const toast = ref('')
@@ -129,6 +131,12 @@ async function changeStatus(order, newStatus) {
 
 function canTransition(status) {
   return (nextStatusMap[status] || []).length > 0
+}
+// 关单超7天不可撤销
+function isExpired(order) {
+  if (!order.orderTime) return false
+  const days = (Date.now() - new Date(order.orderTime).getTime()) / 86400000
+  return days > 7
 }
 
 onMounted(fetchOrders)
@@ -180,8 +188,10 @@ onMounted(fetchOrders)
             <td>
               <template v-if="canTransition(o.status)">
                 <button v-for="ns in (nextStatusMap[o.status]||[])" :key="ns"
+                  v-if="!(o.status==='closed' && ns==='completed' && isExpired(o))"
                   class="btn btn-outline" style="font-size:11px;padding:3px 8px;margin:1px"
-                  @click="changeStatus(o, ns)">{{ actionLabel[ns] || ns }}</button>
+                  @click="changeStatus(o, ns)">{{ ns==='completed' && o.status==='closed' ? '撤销关单' : (actionLabel[ns] || ns) }}</button>
+                <span v-if="o.status==='closed' && isExpired(o)" style="color:#ccc;font-size:11px">超7天不可撤</span>
               </template>
               <span v-else style="color:#ccc;font-size:11px">-</span>
             </td>
