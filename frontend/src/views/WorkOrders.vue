@@ -81,12 +81,12 @@ const pages = computed(() => {
 const statusLabels = {
   pending:'待分派', assigned:'已分派', accepted:'已接单', arrived:'已到场',
   in_progress:'维修中', parts_needed:'待配件', completed:'已完成',
-  confirmed:'已确认', settled:'已结算', closed:'已关单', processing:'处理中'
+  confirmed:'已确认', settled:'已结算', closed:'已关单'
 }
 const statusColors = {
   pending:'#ffa726', assigned:'#42a5f5', accepted:'#26c6da', arrived:'#ab47bc',
   in_progress:'#ef5350', parts_needed:'#ff7043', completed:'#66bb6a',
-  confirmed:'#26a69a', settled:'#78909c', closed:'#bdbdbd', processing:'#ffa726'
+  confirmed:'#26a69a', settled:'#78909c', closed:'#bdbdbd'
 }
 
 // 状态流转：点击推进到下一状态

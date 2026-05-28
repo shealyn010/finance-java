@@ -25,16 +25,17 @@ public class WorkflowStateMachine {
 
     private static final Map<String, Set<String>> ALLOWED = new HashMap<>();
     static {
-        ALLOWED.put("pending",      Set.of("assigned", "closed"));
-        ALLOWED.put("assigned",     Set.of("accepted", "closed", "pending"));
-        ALLOWED.put("accepted",     Set.of("arrived", "closed"));
-        ALLOWED.put("arrived",      Set.of("in_progress", "closed"));
-        ALLOWED.put("in_progress",  Set.of("completed", "parts_needed", "closed"));
-        ALLOWED.put("parts_needed", Set.of("in_progress", "closed"));
-        ALLOWED.put("completed",    Set.of("confirmed", "closed"));
-        ALLOWED.put("confirmed",    Set.of("settled", "closed"));
-        ALLOWED.put("settled",      Set.of("closed"));
-        ALLOWED.put("closed",       Set.of("completed"));
+        // 正向流转
+        ALLOWED.put("pending",      Set.of("assigned"));                  // 待分派→分派
+        ALLOWED.put("assigned",     Set.of("accepted", "pending"));       // 分派→接单(可退回)
+        ALLOWED.put("accepted",     Set.of("arrived", "assigned"));       // 接单→到场
+        ALLOWED.put("arrived",      Set.of("in_progress"));               // 到场→开始维修
+        ALLOWED.put("in_progress",  Set.of("completed", "parts_needed")); // 维修→完成/领料
+        ALLOWED.put("parts_needed", Set.of("in_progress"));               // 领料→继续维修
+        ALLOWED.put("completed",    Set.of("confirmed"));                 // 完成→客户确认
+        ALLOWED.put("confirmed",    Set.of("settled"));                   // 确认→结算
+        ALLOWED.put("settled",      Set.of("closed"));                    // 结算→归档关单
+        ALLOWED.put("closed",       Set.of("completed"));                 // 关单→撤销(回到完成)
     }
 
     private static final Map<String, String> LABELS = Map.ofEntries(
