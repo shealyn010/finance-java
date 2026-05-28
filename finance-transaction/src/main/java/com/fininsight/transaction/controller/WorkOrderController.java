@@ -18,10 +18,13 @@ import java.util.Map;
 public class WorkOrderController {
     private final WorkOrderService workOrderService;
     private final WorkOrderMapper workOrderMapper;
+    private final WorkflowStateMachine stateMachine;
 
-    public WorkOrderController(WorkOrderService workOrderService, WorkOrderMapper workOrderMapper) {
+    public WorkOrderController(WorkOrderService workOrderService, WorkOrderMapper workOrderMapper,
+                               WorkflowStateMachine stateMachine) {
         this.workOrderService = workOrderService;
         this.workOrderMapper = workOrderMapper;
+        this.stateMachine = stateMachine;
     }
 
     @PostMapping

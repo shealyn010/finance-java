@@ -86,6 +86,38 @@ const statusColors = {
   confirmed:'#26a69a', settled:'#78909c', closed:'#bdbdbd', processing:'#ffa726'
 }
 
+// 状态流转：点击推进到下一状态
+const nextStatusMap = {
+  pending: ['assigned', 'closed'],
+  assigned: ['accepted', 'closed'],
+  accepted: ['arrived', 'closed'],
+  arrived: ['in_progress', 'closed'],
+  in_progress: ['parts_needed', 'completed', 'closed'],
+  parts_needed: ['in_progress', 'closed'],
+  completed: ['confirmed', 'closed'],
+  confirmed: ['settled', 'closed'],
+  settled: ['closed'],
+  closed: []
+}
+const actionLabel = {
+  assigned:'分派技术员', accepted:'接单', arrived:'到场签到',
+  in_progress:'开始维修', parts_needed:'需要配件', completed:'维修完成',
+  confirmed:'客户确认', settled:'财务结算', closed:'关单'
+}
+
+async function changeStatus(order, newStatus) {
+  try {
+    await api.put(`/work-order/${order.orderId}/status?status=${newStatus}`)
+    fetchOrders()
+  } catch(e) {
+    alert(e.response?.data?.message || '操作失败')
+  }
+}
+
+function canTransition(status) {
+  return (nextStatusMap[status] || []).length > 0
+}
+
 onMounted(fetchOrders)
 </script>
 
@@ -113,7 +145,7 @@ onMounted(fetchOrders)
       </div>
 
       <table>
-        <thead><tr><th>客户</th><th>类型</th><th>状态</th><th>地点</th><th>收入</th><th>利润</th><th>利润%</th><th>AI</th><th>日期</th></tr></thead>
+        <thead><tr><th>客户</th><th>类型</th><th>状态</th><th>地点</th><th>收入</th><th>利润</th><th>AI</th><th>日期</th><th>操作</th></tr></thead>
         <tbody>
           <tr v-for="o in filteredOrders" :key="o.orderId">
             <td><b>{{ o.customer }}</b></td>
@@ -126,9 +158,15 @@ onMounted(fetchOrders)
             <td style="font-size:13px;color:#888">{{ o.location||'-' }}</td>
             <td>¥{{ (o.totalRevenue||0).toLocaleString() }}</td>
             <td :style="{color:(o.profit||0)>=0?'#2e7d32':'#c62828'}">¥{{ (o.profit||0).toLocaleString() }}</td>
-            <td>{{ (o.profitRate||0).toFixed(0) }}%</td>
             <td><span :class="'tag '+(o.aiCategory==='高利润'?'tag-high':o.aiCategory==='亏损'?'tag-loss':'tag-normal')">{{ o.aiCategory||'未分类' }}</span></td>
             <td style="font-size:13px;color:#999">{{ o.orderTime?.slice(0,10) }}</td>
+            <td>
+              <select v-if="canTransition(o.status)" @change="changeStatus(o, $event.target.value)" style="width:auto;padding:4px 8px;font-size:12px;border-radius:6px" value="">
+                <option value="">操作...</option>
+                <option v-for="ns in nextStatusMap[o.status]" :key="ns" :value="ns">{{ actionLabel[ns] || ns }}</option>
+              </select>
+              <span v-else style="color:#ccc;font-size:11px">-</span>
+            </td>
           </tr>
           <tr v-if="!filteredOrders.length"><td colspan="8" style="text-align:center;padding:40px;color:#ccc">{{ loading?'加载中...':'暂无数据' }}</td></tr>
         </tbody>
