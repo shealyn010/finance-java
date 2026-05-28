@@ -2,10 +2,12 @@ package com.fininsight.transaction.controller;
 
 import com.fininsight.common.result.R;
 import com.fininsight.transaction.service.AgentChatService;
+import com.fininsight.transaction.service.AgentRouter;
 import com.fininsight.transaction.service.ChunkingEngine;
 import com.fininsight.transaction.service.RagService;
 import com.fininsight.transaction.service.SqlAgentService;
 import com.fininsight.transaction.service.WorkOrderAiService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -14,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/agent")
 public class AgentController {
@@ -22,18 +25,6 @@ public class AgentController {
     private final SqlAgentService sqlAgentService;
     private final RagService ragService;
     private final ChunkingEngine chunkingEngine;
-
-    public AgentController(AgentChatService agentChatService,
-                           WorkOrderAiService workOrderAiService,
-                           SqlAgentService sqlAgentService,
-                           RagService ragService,
-                           ChunkingEngine chunkingEngine) {
-        this.agentChatService = agentChatService;
-        this.workOrderAiService = workOrderAiService;
-        this.sqlAgentService = sqlAgentService;
-        this.ragService = ragService;
-        this.chunkingEngine = chunkingEngine;
-    }
 
     /** 对话查询（同步） */
     @PostMapping("/chat")
@@ -49,28 +40,53 @@ public class AgentController {
         return agentChatService.chatStream(userId, message);
     }
 
-    /** 双引擎智能查询: RAG(知识) + SQL(数据) */
+    private final AgentRouter agentRouter;
+
+    public AgentController(AgentChatService agentChatService,
+                           WorkOrderAiService workOrderAiService,
+                           SqlAgentService sqlAgentService,
+                           RagService ragService,
+                           ChunkingEngine chunkingEngine,
+                           AgentRouter agentRouter) {
+        this.agentChatService = agentChatService;
+        this.workOrderAiService = workOrderAiService;
+        this.sqlAgentService = sqlAgentService;
+        this.ragService = ragService;
+        this.chunkingEngine = chunkingEngine;
+        this.agentRouter = agentRouter;
+    }
+
+    /** 路由Agent: LLM语义分析→自动分发到RAG/SQL/Advice */
     @PostMapping("/query")
     public R<Map<String, Object>> smartQuery(@RequestParam(name="userId") Long userId,
                                               @RequestParam(name="message") String message) {
-        // 关键词判断走RAG还是SQL
-        boolean isKnowledge = message.contains("怎么") || message.contains("如何") ||
-            message.contains("排查") || message.contains("维修") && !message.contains("利润") ||
-            message.contains("SLA") || message.contains("故障");
-        if (isKnowledge) {
-            String doc = ragService.search(message);
-            if (doc != null) {
-                Map<String, Object> r = new HashMap<>();
-                r.put("reply", "根据维修知识库：\n\n" + doc);
-                r.put("role", "assistant");
-                r.put("dataContext", "来源: 本地维修知识库(RAG)");
-                r.put("engine", "rag");
-                return R.ok(r);
+        // LLM 语义路由（不是关键词）
+        var route = agentRouter.route(message);
+        log.info("[Router] {} → {}", route.reasoning(), message.substring(0, Math.min(30, message.length())));
+
+        Map<String, Object> result = new HashMap<>();
+
+        switch (route.target()) {
+            case "rag" -> {
+                String doc = ragService.search(message);
+                result.put("reply", doc != null ? doc : "知识库中暂无相关内容。");
+                result.put("dataContext", "RAG知识库: " + route.reasoning());
+                result.put("engine", "rag");
+            }
+            case "advice" -> {
+                result = sqlAgentService.query(userId, message);
+                result.put("reply", "📊 数据分析建议:\n\n" + result.get("reply"));
+                result.put("engine", "advice");
+            }
+            default -> {
+                result = sqlAgentService.query(userId, message);
+                result.put("engine", "sql");
             }
         }
-        // 默认走SQL
-        Map<String, Object> result = sqlAgentService.query(userId, message);
-        result.put("engine", "sql");
+
+        result.put("role", "assistant");
+        result.put("route", route.target());
+        result.put("route_reason", route.reasoning());
         return R.ok(result);
     }
 

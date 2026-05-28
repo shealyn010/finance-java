@@ -47,8 +47,9 @@ public class AgentChatService {
             // 1. 意图分类（关键词强制定路由）
             String intent = classifyIntent(message);
             if (message.contains("哪个月") || message.contains("亏损") || message.contains("月份")
-                || message.contains("材料费") || message.contains("成本") || message.contains("占比")) {
-                intent = "specific_query";
+                || message.contains("材料费") || message.contains("成本") || message.contains("占比")
+                || message.contains("库存")) {
+                intent = "sql_query";
             }
 
             // 2. 根据意图走不同数据获取策略
@@ -136,7 +137,7 @@ public class AgentChatService {
     @SuppressWarnings("unchecked")
     private String classifyIntent(String question) {
         try {
-            String prompt = "判断用户意图，只返回一个词: specific_query(问具体时间/类型/地点的数据) / advice(求建议/优化/怎么提升) / overview(其他)";
+            String prompt = "判断用户意图，只返回一个词: sql_query(问具体数据/数量/统计/利润/库存) / knowledge(问知识/概念/怎么排查/是什么/干啥用的/规格参数) / advice(求建议/优化) / overview(其他)";
             Map<String, Object> resp = webClient.post().uri("/v1/chat/completions")
                 .bodyValue(Map.of("model","deepseek-chat","max_tokens",20,"temperature",0,
                     "messages",List.of(Map.of("role","user","content",prompt+"\n\n问题:"+question))))
