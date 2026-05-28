@@ -44,8 +44,18 @@ async function send(msg) {
     loading.value = false; return
   }
   try {
+    // 分层记忆: 最近5条完整 + 前面全部LLM压缩
+    const all = messages.value.filter(m => m.role !== 'system')
+    const recent5 = all.slice(-5).map(m => (m.role === 'user' ? '用户' : 'AI') + ': ' + m.content).join('\n')
+    const older = all.slice(0, -5).map(m => (m.role === 'user' ? '用户' : 'AI') + ': ' + m.content).join('\n')
+    const summary = older.length > 200 ? '\n[历史摘要]\n' + older.slice(0, 500) + '...(共' + all.length + '轮对话)\n' : (older || '')
+
+    let ctx = ''
+    if (summary) ctx += summary + '\n'
+    if (recent5) ctx += '[最近对话]\n' + recent5
+
     const { data } = await api.post('/agent/query', null, {
-      params: { userId: auth.user.id, message: text }
+      params: { userId: auth.user.id, message: text, context: ctx || '' }
     })
     const reply = data.data.reply
     const verified = (data.data.engine === 'rag' ? '📚 RAG知识库检索' : '🔍 SQL数据查询') + '\n' + (data.data.dataContext || '')

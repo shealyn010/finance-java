@@ -59,12 +59,15 @@ public class AgentController {
     /** 路由Agent: LLM语义分析→自动分发到RAG/SQL/Advice */
     @PostMapping("/query")
     public R<Map<String, Object>> smartQuery(@RequestParam(name="userId") Long userId,
-                                              @RequestParam(name="message") String message) {
-        // LLM 语义路由（不是关键词）
-        var route = agentRouter.route(message);
+                                              @RequestParam(name="message") String message,
+                                              @RequestParam(defaultValue = "") String context) {
+        // 带上对话历史做语义路由
+        String fullMsg = context.isEmpty() ? message : context + "\n用户: " + message;
+        var route = agentRouter.route(fullMsg);
         log.info("[Router] {} → {}", route.reasoning(), message.substring(0, Math.min(30, message.length())));
 
         Map<String, Object> result = new HashMap<>();
+        String contextPrompt = context.isEmpty() ? "" : "对话历史:\n" + context + "\n\n当前问题: ";
 
         switch (route.target()) {
             case "rag" -> {
@@ -74,12 +77,12 @@ public class AgentController {
                 result.put("engine", "rag");
             }
             case "advice" -> {
-                result = sqlAgentService.query(userId, message);
+                result = sqlAgentService.query(userId, contextPrompt + message);
                 result.put("reply", "📊 数据分析建议:\n\n" + result.get("reply"));
                 result.put("engine", "advice");
             }
             default -> {
-                result = sqlAgentService.query(userId, message);
+                result = sqlAgentService.query(userId, contextPrompt + message);
                 result.put("engine", "sql");
             }
         }
