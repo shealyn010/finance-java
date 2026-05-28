@@ -108,3 +108,7 @@ h3 { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 12px; }
 .chat-box { height: 400px; overflow-y: auto; padding: 16px 0; display: flex; flex-direction: column; }
 .chat-input { display: flex; gap: 10px; margin-top: 12px; }
 </style>
+
+<style>
+@keyframes fade { 0%,70%{opacity:1} 100%{opacity:0;transform:translateY(-10px)} }
+</style>

@@ -106,30 +106,23 @@ const actionLabel = {
   reopen:'撤销关单'
 }
 
+const toast = ref('')
 async function changeStatus(order, newStatus) {
-  // 领料：弹出库存选择
+  toast.value = ''
   if (newStatus === 'parts_needed') {
     const partId = prompt('输入配件编号(如 PART001):', 'PART001')
     const qty = prompt('数量:', '1')
     if (!partId || !qty) return
     try {
-      await api.post('/inventory/deduct', null, {
-        params: { partId, qty: parseInt(qty), orderId: order.orderId, userId: auth.user?.username || 'admin' }
-      })
-      await api.put(`/work-order/${order.orderId}/status?status=${newStatus}`)
-      fetchOrders()
-    } catch(e) { alert(e.response?.data?.message || '领料失败') }
-    return
-  }
-  // 完成维修：提示利润
-  if (newStatus === 'completed' && order.profit) {
-    alert(`工单利润: ¥${(order.profit||0).toLocaleString()} (${(order.profitRate||0).toFixed(1)}%)`)
+      await api.post('/inventory/deduct', null, { params: { partId, qty: parseInt(qty), orderId: order.orderId, userId: auth.user?.username || 'admin' } })
+    } catch(e) { toast.value = '❌ ' + (e.response?.data?.message || '领料失败'); return }
   }
   try {
     await api.put(`/work-order/${order.orderId}/status?status=${newStatus}`)
+    toast.value = '✅ ' + (statusLabels[newStatus] || newStatus) + ' 操作成功'
     fetchOrders()
   } catch(e) {
-    alert(e.response?.data?.message || '操作失败')
+    toast.value = '❌ ' + (e.response?.data?.message || e.message || '操作失败')
   }
 }
 
@@ -142,6 +135,7 @@ onMounted(fetchOrders)
 
 <template>
   <div>
+    <div v-if="toast" style="position:fixed;top:20px;right:20px;background:#333;color:#fff;padding:12px 20px;border-radius:8px;z-index:999;font-size:14px;animation:fade 3s forwards" @click="toast=''">{{ toast }}</div>
     <div class="grid-4">
       <div class="metric"><div class="val">{{ stats.total.toLocaleString() }}</div><div class="lbl">工单总数</div></div>
       <div class="metric"><div class="val">¥{{ stats.revenue.toLocaleString() }}</div><div class="lbl">总收入</div></div>
