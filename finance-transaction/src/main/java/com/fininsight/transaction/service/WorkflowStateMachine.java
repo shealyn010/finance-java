@@ -35,7 +35,8 @@ public class WorkflowStateMachine {
             "completed",    Set.of("confirmed", "closed"),
             "confirmed",    Set.of("settled", "closed"),
             "settled",      Set.of("closed"),
-            "closed",       Set.of()
+            "closed",       Set.of("reopen"),
+            "reopen",       Set.of("in_progress", "completed")
         );
     }
 

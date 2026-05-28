@@ -96,16 +96,35 @@ const nextStatusMap = {
   parts_needed: ['in_progress', 'closed'],
   completed: ['confirmed', 'closed'],
   confirmed: ['settled', 'closed'],
-  settled: ['closed'],
-  closed: []
+  settled: [],
+  closed: ['reopen']
 }
 const actionLabel = {
   assigned:'分派技术员', accepted:'接单', arrived:'到场签到',
-  in_progress:'开始维修', parts_needed:'需要配件', completed:'维修完成',
-  confirmed:'客户确认', settled:'财务结算', closed:'关单'
+  in_progress:'开始维修', parts_needed:'领料出库', completed:'维修完成',
+  confirmed:'客户确认', settled:'财务结算', closed:'关单',
+  reopen:'撤销关单'
 }
 
 async function changeStatus(order, newStatus) {
+  // 领料：弹出库存选择
+  if (newStatus === 'parts_needed') {
+    const partId = prompt('输入配件编号(如 PART001):', 'PART001')
+    const qty = prompt('数量:', '1')
+    if (!partId || !qty) return
+    try {
+      await api.post('/inventory/deduct', null, {
+        params: { partId, qty: parseInt(qty), orderId: order.orderId, userId: auth.user?.username || 'admin' }
+      })
+      await api.put(`/work-order/${order.orderId}/status?status=${newStatus}`)
+      fetchOrders()
+    } catch(e) { alert(e.response?.data?.message || '领料失败') }
+    return
+  }
+  // 完成维修：提示利润
+  if (newStatus === 'completed' && order.profit) {
+    alert(`工单利润: ¥${(order.profit||0).toLocaleString()} (${(order.profitRate||0).toFixed(1)}%)`)
+  }
   try {
     await api.put(`/work-order/${order.orderId}/status?status=${newStatus}`)
     fetchOrders()
